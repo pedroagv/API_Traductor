@@ -2,10 +2,11 @@ import datetime
 import hashlib
 import json
 import os
+import random
 import sys
-from http.server import BaseHTTPRequestHandler, HTTPServer
 import urllib.parse
 import urllib.request
+from wsgiref.simple_server import make_server
 
 PORT = int(os.environ.get("PORT", 8000))
 DATA_FILE = os.path.join(os.path.dirname(__file__), "licenses.json")
@@ -119,17 +120,14 @@ def save_db_supabase(data: dict):
     if not SUPABASE_URL or not SUPABASE_KEY or not isinstance(data, dict):
         return
     try:
-        # Guardar copia completa en app_config key=licenses_db
         supabase_request("app_config", method="POST", payload={"key": "licenses_db", "value": data}, prefer="resolution=merge-duplicates")
 
-        # Guardar dispositivos individuales
         devices = data.get("devices", {})
         if isinstance(devices, dict):
             for dev in devices.values():
                 if isinstance(dev, dict) and "hw_id" in dev:
                     save_device_supabase(dev)
 
-        # Guardar tickets individuales
         tickets = data.get("tickets", {})
         if isinstance(tickets, dict):
             for t in tickets.values():
@@ -203,26 +201,138 @@ def check_auth_token(token: str) -> bool:
     return token and token == get_admin_token()
 
 
-class LicenseAPIHandler(BaseHTTPRequestHandler):
-    def _set_headers(self, status=200, content_type="application/json"):
-        self.send_response(status)
-        self.send_header("Content-Type", content_type)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.end_headers()
+def evaluate_device(dev: dict) -> dict:
+    if not isinstance(dev, dict):
+        return {"can_run": True, "is_trial": True, "days_left": TRIAL_DAYS, "status_msg": "Período de prueba activo"}
 
-    def do_POST(self):
-        if self.path == "/register-device":
-            content_len = int(self.headers.get("Content-Length", 0))
-            post_body = self.rfile.read(content_len).decode("utf-8")
-            parsed = urllib.parse.parse_qs(post_body)
+    plan = dev.get("plan", "FREE")
+    expires_at_str = dev.get("expires_at")
+    first_seen_str = dev.get("first_seen")
+    now = datetime.datetime.now()
 
-            hw_id = parsed.get("hw_id", [""])[0].strip()
-            hostname = parsed.get("hostname", [""])[0].strip()
+    if plan == "PAID":
+        if expires_at_str:
+            try:
+                exp_dt = datetime.datetime.fromisoformat(expires_at_str)
+                if now < exp_dt:
+                    days_remaining = (exp_dt - now).days
+                    return {
+                        "can_run": True,
+                        "is_trial": False,
+                        "days_left": max(0, days_remaining),
+                        "status_msg": f"Licencia Activa ({days_remaining} días restantes)",
+                    }
+                else:
+                    return {
+                        "can_run": False,
+                        "is_trial": False,
+                        "days_left": 0,
+                        "status_msg": "Licencia Expirada",
+                    }
+            except Exception:
+                pass
+        return {
+            "can_run": True,
+            "is_trial": False,
+            "days_left": 365,
+            "status_msg": "Licencia Activa (Ilimitada)",
+        }
+
+    # Plan FREE (Período de Prueba)
+    first_seen = now
+    if first_seen_str:
+        try:
+            first_seen = datetime.datetime.fromisoformat(first_seen_str)
+        except Exception:
+            pass
+
+    days_used = (now - first_seen).days
+    days_left = max(0, TRIAL_DAYS - days_used)
+    can_run = days_used < TRIAL_DAYS
+
+    if can_run:
+        msg = f"Período de prueba gratis ({days_left} días restantes)"
+    else:
+        msg = "Período de prueba gratis de 60 días finalizado. Requiere licencia."
+
+    return {
+        "can_run": can_run,
+        "is_trial": True,
+        "days_left": days_left,
+        "status_msg": msg,
+    }
+
+
+def app(environ, start_response):
+    path = environ.get("PATH_INFO", "/")
+    method = environ.get("REQUEST_METHOD", "GET").upper()
+    query_str = environ.get("QUERY_STRING", "")
+    query = urllib.parse.parse_qs(query_str)
+
+    def response(status_code: int, body: bytes | str | dict | list, content_type: str = "application/json", headers_extra: list = None):
+        status_messages = {
+            200: "200 OK",
+            302: "302 Found",
+            400: "400 Bad Request",
+            401: "401 Unauthorized",
+            404: "404 Not Found",
+            405: "405 Method Not Allowed",
+            500: "500 Internal Server Error",
+        }
+        status_line = status_messages.get(status_code, f"{status_code} Status")
+        headers = [
+            ("Content-Type", content_type),
+            ("Access-Control-Allow-Origin", "*"),
+            ("Access-Control-Allow-Methods", "GET, POST, OPTIONS"),
+            ("Access-Control-Allow-Headers", "Content-Type, Authorization"),
+        ]
+        if headers_extra:
+            headers.extend(headers_extra)
+
+        if isinstance(body, (dict, list)):
+            body_bytes = json.dumps(body, ensure_ascii=False).encode("utf-8")
+        elif isinstance(body, str):
+            body_bytes = body.encode("utf-8")
+        else:
+            body_bytes = body
+
+        headers.append(("Content-Length", str(len(body_bytes))))
+        start_response(status_line, headers)
+        return [body_bytes]
+
+    if method == "OPTIONS":
+        return response(200, b"", "text/plain")
+
+    # Read body for POST requests
+    post_params = {}
+    if method == "POST":
+        content_len = int(environ.get("CONTENT_LENGTH", 0) or 0)
+        if content_len > 0 and "wsgi.input" in environ:
+            raw_body = environ["wsgi.input"].read(content_len).decode("utf-8", errors="replace")
+            content_type = environ.get("CONTENT_TYPE", "")
+            if "application/json" in content_type:
+                try:
+                    post_params = json.loads(raw_body)
+                except Exception:
+                    post_params = {}
+            else:
+                parsed = urllib.parse.parse_qs(raw_body)
+                post_params = {k: v[0] if len(v) == 1 else v for k, v in parsed.items()}
+
+    def get_param(name: str, default: str = "") -> str:
+        val = post_params.get(name) or query.get(name, [""])[0]
+        if isinstance(val, list):
+            return val[0].strip() if val else default
+        return str(val).strip()
+
+    # --- POST Endpoints ---
+    if method == "POST":
+        if path == "/register-device":
+            hw_id = get_param("hw_id")
+            hostname = get_param("hostname")
 
             if not hw_id:
-                self._set_headers(400)
-                self.wfile.write(json.dumps({"success": False, "can_run": False, "message": "Falta el ID del equipo."}).encode())
-                return
+                return response(400, {"success": False, "can_run": False, "message": "Falta el ID del equipo."})
 
             db = load_db()
             devices = db.setdefault("devices", {})
@@ -248,34 +358,26 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
             save_db(db)
 
             evaluation = evaluate_device(dev)
-            self._set_headers(200)
-            self.wfile.write(json.dumps({
+            return response(200, {
                 "success": True,
                 "hw_id": hw_id,
                 "plan": dev.get("plan", "FREE"),
                 "expires_at": dev.get("expires_at"),
                 **evaluation,
-            }).encode())
+            })
 
-        elif self.path == "/admin/api/activate-device":
-            content_len = int(self.headers.get("Content-Length", 0))
-            post_body = self.rfile.read(content_len).decode("utf-8")
-            parsed = urllib.parse.parse_qs(post_body)
-
-            token = parsed.get("token", [""])[0]
-            hw_id = parsed.get("hw_id", [""])[0].strip()
-            months = int(parsed.get("months", [1])[0] or 1)
-            note = parsed.get("note", [""])[0]
+        elif path == "/admin/api/activate-device":
+            token = get_param("token")
+            hw_id = get_param("hw_id")
+            months_raw = get_param("months", "1")
+            months = int(months_raw) if months_raw.isdigit() else 1
+            note = get_param("note")
 
             if not check_auth_token(token):
-                self._set_headers(401)
-                self.wfile.write(json.dumps({"success": False, "message": "No autorizado"}).encode())
-                return
+                return response(401, {"success": False, "message": "No autorizado"})
 
             if not hw_id:
-                self._set_headers(400)
-                self.wfile.write(json.dumps({"success": False, "message": "Falta el ID del equipo"}).encode())
-                return
+                return response(400, {"success": False, "message": "Falta el ID del equipo"})
 
             db = load_db()
             devices = db.setdefault("devices", {})
@@ -297,124 +399,88 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                 dev["note"] = note
             save_db(db)
 
-            self._set_headers(200)
-            self.wfile.write(json.dumps({"success": True, "hw_id": hw_id, "expires_at": dev["expires_at"]}).encode())
+            return response(200, {"success": True, "hw_id": hw_id, "expires_at": dev["expires_at"]})
 
-        elif self.path == "/admin/api/deactivate-device":
-            content_len = int(self.headers.get("Content-Length", 0))
-            post_body = self.rfile.read(content_len).decode("utf-8")
-            parsed = urllib.parse.parse_qs(post_body)
-            token = parsed.get("token", [""])[0]
-            hw_id = parsed.get("hw_id", [""])[0].strip()
+        elif path == "/admin/api/deactivate-device":
+            token = get_param("token")
+            hw_id = get_param("hw_id")
 
             if not check_auth_token(token):
-                self._set_headers(401)
-                self.wfile.write(json.dumps({"success": False, "message": "No autorizado"}).encode())
-                return
+                return response(401, {"success": False, "message": "No autorizado"})
 
             db = load_db()
             dev = db.get("devices", {}).get(hw_id)
             if not dev:
-                self._set_headers(404)
-                self.wfile.write(json.dumps({"success": False, "message": "Dispositivo no encontrado"}).encode())
-                return
+                return response(404, {"success": False, "message": "Dispositivo no encontrado"})
 
             dev["plan"] = "FREE"
             dev["activated_at"] = None
             dev["duration_months"] = 0
             dev["expires_at"] = None
             save_db(db)
-            self._set_headers(200)
-            self.wfile.write(json.dumps({"success": True, "message": "Dispositivo regresado a plan FREE"}).encode())
+            return response(200, {"success": True, "message": "Dispositivo regresado a plan FREE"})
 
-        elif self.path == "/admin/api/delete-device":
-            content_len = int(self.headers.get("Content-Length", 0))
-            post_body = self.rfile.read(content_len).decode("utf-8")
-            parsed = urllib.parse.parse_qs(post_body)
-            token = parsed.get("token", [""])[0]
-            hw_id = parsed.get("hw_id", [""])[0].strip()
+        elif path == "/admin/api/delete-device":
+            token = get_param("token")
+            hw_id = get_param("hw_id")
 
             if not check_auth_token(token):
-                self._set_headers(401)
-                self.wfile.write(json.dumps({"success": False, "message": "No autorizado"}).encode())
-                return
+                return response(401, {"success": False, "message": "No autorizado"})
 
             db = load_db()
             if hw_id in db.get("devices", {}):
                 del db["devices"][hw_id]
+                delete_device_supabase(hw_id)
                 save_db(db)
-                self._set_headers(200)
-                self.wfile.write(json.dumps({"success": True, "message": f"Dispositivo {hw_id} eliminado"}).encode())
+                return response(200, {"success": True, "message": f"Dispositivo {hw_id} eliminado"})
             else:
-                self._set_headers(404)
-                self.wfile.write(json.dumps({"success": False, "message": "Dispositivo no encontrado"}).encode())
+                return response(404, {"success": False, "message": "Dispositivo no encontrado"})
 
-        elif self.path == "/admin/api/login":
-            content_len = int(self.headers.get("Content-Length", 0))
-            post_body = self.rfile.read(content_len).decode("utf-8")
-            parsed = urllib.parse.parse_qs(post_body)
-            user = parsed.get("user", [""])[0].strip()
-            password = parsed.get("pass", [""])[0].strip()
+        elif path == "/admin/api/login":
+            user = get_param("user")
+            password = get_param("pass")
             valid_user, valid_pass = get_admin_credentials()
 
             if user == valid_user and password == valid_pass:
                 token = get_admin_token(user, password)
-                self._set_headers(200)
-                self.wfile.write(json.dumps({"success": True, "token": token}).encode())
+                return response(200, {"success": True, "token": token})
             else:
-                self._set_headers(401)
-                self.wfile.write(json.dumps({"success": False, "message": "Usuario o clave incorrectos"}).encode())
+                return response(401, {"success": False, "message": "Usuario o clave incorrectos"})
 
-        elif self.path == "/admin/api/change-credentials":
-            content_len = int(self.headers.get("Content-Length", 0))
-            post_body = self.rfile.read(content_len).decode("utf-8")
-            parsed = urllib.parse.parse_qs(post_body)
-            token = parsed.get("token", [""])[0]
-            new_user = parsed.get("new_user", [""])[0].strip()
-            new_pass = parsed.get("new_pass", [""])[0].strip()
+        elif path == "/admin/api/change-credentials":
+            token = get_param("token")
+            new_user = get_param("new_user")
+            new_pass = get_param("new_pass")
 
             if not check_auth_token(token):
-                self._set_headers(401)
-                self.wfile.write(json.dumps({"success": False, "message": "No autorizado"}).encode())
-                return
+                return response(401, {"success": False, "message": "No autorizado"})
 
             if not new_user or not new_pass:
-                self._set_headers(400)
-                self.wfile.write(json.dumps({"success": False, "message": "El usuario y contraseña no pueden estar vacíos"}).encode())
-                return
+                return response(400, {"success": False, "message": "El usuario y contraseña no pueden estar vacíos"})
 
             db = load_db()
             db["admin_config"] = {"user": new_user, "pass": new_pass}
             save_db(db)
 
             new_token = get_admin_token(new_user, new_pass)
-            self._set_headers(200)
-            self.wfile.write(json.dumps({"success": True, "message": "Credenciales actualizadas exitosamente", "token": new_token}).encode())
+            return response(200, {"success": True, "message": "Credenciales actualizadas exitosamente", "token": new_token})
 
-        elif self.path == "/submit-ticket":
-            content_len = int(self.headers.get("Content-Length", 0))
-            post_body = self.rfile.read(content_len).decode("utf-8")
-            parsed = urllib.parse.parse_qs(post_body)
-            
-            hw_id = parsed.get("hw_id", [""])[0].strip()
-            mac = parsed.get("mac", [""])[0].strip()
-            hostname = parsed.get("hostname", [""])[0].strip()
-            contact_info = parsed.get("contact_info", [""])[0].strip()
-            license_key = parsed.get("license_key", [""])[0].strip().upper()
-            subject = parsed.get("subject", ["Soporte Técnico"])[0].strip()
-            category = parsed.get("category", ["Soporte Técnico"])[0].strip()
-            message = parsed.get("message", [""])[0].strip()
-            logs = parsed.get("logs", [""])[0].strip()
+        elif path == "/submit-ticket":
+            hw_id = get_param("hw_id")
+            mac = get_param("mac")
+            hostname = get_param("hostname")
+            contact_info = get_param("contact_info")
+            license_key = get_param("license_key").upper()
+            subject = get_param("subject", "Soporte Técnico")
+            category = get_param("category", "Soporte Técnico")
+            message = get_param("message")
+            logs = get_param("logs")
 
             if not message and not subject:
-                self._set_headers(400)
-                self.wfile.write(json.dumps({"success": False, "message": "El mensaje no puede estar vacío"}).encode())
-                return
+                return response(400, {"success": False, "message": "El mensaje no puede estar vacío"})
 
             db = load_db()
-            tickets = db.get("tickets", {})
-            
-            import random
+            tickets = db.setdefault("tickets", {})
             ticket_id = f"TCK-{random.randint(1000, 9999)}"
             now_iso = datetime.datetime.now().isoformat()
 
@@ -436,31 +502,23 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                 "updated_at": now_iso
             }
             tickets[ticket_id] = ticket_obj
-            db["tickets"] = tickets
             save_db(db)
 
-            self._set_headers(200)
-            self.wfile.write(json.dumps({
+            return response(200, {
                 "success": True,
                 "message": f"¡Ticket {ticket_id} creado con éxito!",
                 "ticket_id": ticket_id
-            }).encode())
+            })
 
-        elif self.path == "/admin/api/reply-ticket":
-            content_len = int(self.headers.get("Content-Length", 0))
-            post_body = self.rfile.read(content_len).decode("utf-8")
-            parsed = urllib.parse.parse_qs(post_body)
-            
-            token = parsed.get("token", [""])[0]
-            ticket_id = parsed.get("ticket_id", [""])[0].strip()
-            status = parsed.get("status", ["En Revisión 🛠️"])[0].strip()
-            admin_reply = parsed.get("admin_reply", [""])[0].strip()
-            meeting_url = parsed.get("meeting_url", [""])[0].strip()
+        elif path == "/admin/api/reply-ticket":
+            token = get_param("token")
+            ticket_id = get_param("ticket_id")
+            status = get_param("status", "En Revisión 🛠️")
+            admin_reply = get_param("admin_reply")
+            meeting_url = get_param("meeting_url")
 
             if not check_auth_token(token):
-                self._set_headers(401)
-                self.wfile.write(json.dumps({"success": False, "message": "No autorizado"}).encode())
-                return
+                return response(401, {"success": False, "message": "No autorizado"})
 
             db = load_db()
             tickets = db.get("tickets", {})
@@ -470,30 +528,23 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                 tickets[ticket_id]["meeting_url"] = meeting_url
                 tickets[ticket_id]["updated_at"] = datetime.datetime.now().isoformat()
                 save_db(db)
-                self._set_headers(200)
-                self.wfile.write(json.dumps({"success": True, "message": "Ticket actualizado"}).encode())
+                return response(200, {"success": True, "message": "Ticket actualizado"})
             else:
-                self._set_headers(404)
-                self.wfile.write(json.dumps({"success": False, "message": "Ticket no encontrado"}).encode())
+                return response(404, {"success": False, "message": "Ticket no encontrado"})
 
         else:
-            self._set_headers(404)
-            self.wfile.write(json.dumps({"error": "Endpoint no encontrado"}).encode())
+            return response(404, {"error": "Endpoint no encontrado"})
 
-    def do_GET(self):
-        parsed_url = urllib.parse.urlparse(self.path)
-        path = parsed_url.path
-        query = urllib.parse.parse_qs(parsed_url.query)
-
-        if path == "/check-update" or path == "/updates":
+    # --- GET Endpoints ---
+    if method == "GET":
+        if path in ("/check-update", "/updates"):
             db = load_db()
             updates = db.get("updates", {})
-            self._set_headers(200)
-            self.wfile.write(json.dumps({
+            return response(200, {
                 "tag_name": updates.get("latest_version", "1.0.0"),
                 "html_url": "/download",
                 "notes": updates.get("release_notes", ""),
-            }).encode())
+            })
 
         elif path in ("/download", "/download/", "/ReunionPro_Portable.zip", "/SubVozPro_Portable.zip") or path.startswith("/downloads/"):
             db = load_db()
@@ -501,41 +552,32 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
             download_url = updates.get("download_url", "").strip()
 
             if download_url and download_url != "/download" and "pedro/reunion" not in download_url:
-                self.send_response(302)
-                self.send_header("Location", download_url)
-                self.end_headers()
-                return
+                target_url = download_url
+            else:
+                target_url = "https://github.com/pedroagv/API_Traductor/releases/latest/download/SubVozPro_Portable.zip"
 
-            default_rel = "https://github.com/pedroagv/API_Traductor/releases/latest/download/SubVozPro_Portable.zip"
-            self.send_response(302)
-            self.send_header("Location", default_rel)
-            self.end_headers()
+            return response(302, b"", "text/html", [("Location", target_url)])
 
-        elif path == "/admin" or path == "/admin/":
+        elif path in ("/admin", "/admin/"):
             admin_path = os.path.join(os.path.dirname(__file__), "admin.html")
             if os.path.exists(admin_path):
-                self._set_headers(200, content_type="text/html; charset=utf-8")
                 with open(admin_path, "rb") as f:
-                    self.wfile.write(f.read())
+                    return response(200, f.read(), "text/html; charset=utf-8")
             else:
-                self._set_headers(404)
-                self.wfile.write(json.dumps({"error": "admin.html no encontrado"}).encode())
+                return response(404, {"error": "admin.html no encontrado"})
 
         elif path == "/check-tickets":
-            mac = query.get("mac", [""])[0].strip()
-            hw_id = query.get("hw_id", [""])[0].strip()
+            mac = get_param("mac")
+            hw_id = get_param("hw_id")
             db = load_db()
             tickets = db.get("tickets", {})
             user_tickets = [t for t in tickets.values() if (mac and t.get("mac") == mac) or (hw_id and t.get("hw_id") == hw_id)]
-            self._set_headers(200)
-            self.wfile.write(json.dumps({"success": True, "tickets": user_tickets}).encode())
+            return response(200, {"success": True, "tickets": user_tickets})
 
         elif path == "/admin/api/devices":
-            token = query.get("token", [""])[0]
+            token = get_param("token")
             if not check_auth_token(token):
-                self._set_headers(401)
-                self.wfile.write(json.dumps({"success": False, "message": "No autorizado"}).encode())
-                return
+                return response(401, {"success": False, "message": "No autorizado"})
 
             db = load_db()
             devices = db.get("devices", {})
@@ -543,41 +585,31 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
             for hw_id, dev in devices.items():
                 enriched[hw_id] = {**dev, **evaluate_device(dev)}
 
-            self._set_headers(200)
-            self.wfile.write(json.dumps({"success": True, "devices": enriched}).encode())
+            return response(200, {"success": True, "devices": enriched})
 
         elif path == "/admin/api/tickets":
-            token = query.get("token", [""])[0]
+            token = get_param("token")
             if not check_auth_token(token):
-                self._set_headers(401)
-                self.wfile.write(json.dumps({"success": False, "message": "No autorizado"}).encode())
-                return
+                return response(401, {"success": False, "message": "No autorizado"})
 
             db = load_db()
-            self._set_headers(200)
-            self.wfile.write(json.dumps({"success": True, "tickets": db.get("tickets", {})}).encode())
+            return response(200, {"success": True, "tickets": db.get("tickets", {})})
 
         elif path == "/api-status":
-            self._set_headers(200)
-            self.wfile.write(json.dumps({"status": "SubVoz Pro License API Running"}).encode())
+            return response(200, {"status": "SubVoz Pro License API Running"})
 
         else:
             landing_path = os.path.join(os.path.dirname(__file__), "landing.html")
             if os.path.exists(landing_path):
-                self._set_headers(200, content_type="text/html; charset=utf-8")
                 with open(landing_path, "rb") as f:
-                    self.wfile.write(f.read())
+                    return response(200, f.read(), "text/html; charset=utf-8")
             else:
-                self._set_headers(200)
-                self.wfile.write(json.dumps({"status": "SubVoz Pro License API Running"}).encode())
+                return response(200, {"status": "SubVoz Pro License API Running"})
 
-
-def run_server():
-    server_address = ("", PORT)
-    httpd = HTTPServer(server_address, LicenseAPIHandler)
-    print(f"🚀 Servidor API de Licencias SubVoz Pro ejecutándose en el puerto {PORT}...")
-    httpd.serve_forever()
+    return response(405, {"error": "Método no permitido"})
 
 
 if __name__ == "__main__":
-    run_server()
+    print(f"🚀 Servidor API de Licencias SubVoz Pro ejecutándose en el puerto {PORT} (WSGI)...")
+    httpd = make_server("", PORT, app)
+    httpd.serve_forever()
