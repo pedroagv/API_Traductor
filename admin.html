@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⭐ SubVoz Pro - Panel de Administración</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0F172A;
+            --card-bg: #1E293B;
+            --border: #334155;
+            --primary: #3B82F6;
+            --purple: #8B5CF6;
+            --green: #10B981;
+            --red: #EF4444;
+            --text: #F8FAFC;
+            --muted: #94A3B8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 20px; line-height: 1.5; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+        .brand { font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800; background: linear-gradient(135deg, #60A5FA, #A78BFA); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 8px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; text-decoration: none; transition: 0.2s ease; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: #2563EB; }
+        .btn-green { background: var(--green); color: #fff; }
+        .btn-green:hover { background: #059669; }
+        .btn-danger { background: rgba(239, 68, 68, 0.15); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .btn-danger:hover { background: var(--red); color: #fff; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+        .btn-outline:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 24px; }
+        .card h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        input, select { background: #0F172A; border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 8px; font-size: 14px; outline: none; }
+        input:focus, select:focus { border-color: var(--primary); }
+
+        .generated-box { background: rgba(16, 185, 129, 0.1); border: 1px dashed var(--green); border-radius: 10px; padding: 16px; margin-top: 16px; display: none; }
+        .generated-key { font-family: monospace; font-size: 18px; font-weight: 800; color: #34D399; letter-spacing: 1px; }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 14px; }
+        th { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--muted); background: rgba(0,0,0,0.2); }
+        tr:hover { background: rgba(255,255,255,0.02); }
+
+        .badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px; text-transform: uppercase; }
+        .badge-single { background: rgba(59, 130, 246, 0.15); color: #60A5FA; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .badge-multi { background: rgba(139, 92, 246, 0.15); color: #A78BFA; border: 1px solid rgba(139, 92, 246, 0.3); }
+
+        /* Modal Login */
+        .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 999; }
+        .login-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 100%; max-width: 380px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+
+    <!-- Pantalla de Login -->
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-box">
+            <h2 style="font-family: 'Outfit', sans-serif; font-size: 24px; text-align: center; margin-bottom: 8px;">🔐 Panel Admin</h2>
+            <p style="color: var(--muted); font-size: 13px; text-align: center; margin-bottom: 24px;">⭐ SubVoz Pro - Licenciamiento</p>
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label>Usuario</label>
+                <input type="text" id="admin-user" placeholder="pedroadmin" value="pedroadmin">
+            </div>
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label>Contraseña</label>
+                <input type="password" id="admin-pass" placeholder="••••••••">
+            </div>
+            <button class="btn btn-primary" onclick="doLogin()" style="width: 100%; justify-content: center;">Ingresar al Panel</button>
+            <div id="login-error" style="color: var(--red); font-size: 13px; text-align: center; margin-top: 12px; display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Panel de Control Principal -->
+    <div class="container">
+        <header>
+            <div class="brand">⭐ SubVoz Pro - Admin Panel</div>
+            <div>
+                <span id="session-user-display" style="font-size: 13px; color: var(--muted); margin-right: 12px;"></span>
+                <button class="btn btn-outline" onclick="doLogout()">🚪 Cerrar Sesión</button>
+            </div>
+        </header>
+
+        <!-- Sección Generador de Claves -->
+        <div class="card">
+            <h2>🔑 Crear / Generar Nueva Licencia</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Nombre / Nota del Cliente</label>
+                    <input type="text" id="client-note" placeholder="Ej: Carlos Pérez / Empresa ABC">
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Licencia</label>
+                    <select id="license-type" onchange="onTypeChange()">
+                        <option value="1">Monousuario ($30.000 COP - 1 equipo)</option>
+                        <option value="custom">Multiusuario / Corporativa</option>
+                    </select>
+                </div>
+                <div class="form-group" id="seats-group" style="display: none;">
+                    <label>Número de Equipos / Licencias</label>
+                    <input type="number" id="seats-num" min="1" max="500" value="5">
+                </div>
+                <div class="form-group">
+                    <label>Clave (Opcional - o generar automáticamente)</label>
+                    <input type="text" id="custom-key" placeholder="SUBVOZ-XXXX-XXXX">
+                </div>
+            </div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="generateAutoKey()">✨ Generar Código Aleatorio</button>
+                <button class="btn btn-green" onclick="submitCreateKey()">🚀 Guardar y Crear Licencia</button>
+            </div>
+
+            <div id="generated-box" class="generated-box">
+                <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">✅ LICENCIA CREADA EXITOSAMENTE:</div>
+                <div class="generated-key" id="gen-key-result"></div>
+                <div style="margin-top: 10px; display: flex; gap: 10px;">
+                    <button class="btn btn-outline" onclick="copyKeyText()">📋 Copiar Clave</button>
+                    <button class="btn btn-green" onclick="sendKeyWhatsApp()">📱 Enviar por WhatsApp</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Licencias Existentes -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h2>📋 Licencias Registradas en el Sistema</h2>
+                <button class="btn btn-outline" onclick="loadLicenses()">🔄 Actualizar Lista</button>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Clave</th>
+                            <th>Tipo / Equipos</th>
+                            <th>Usados / Máx</th>
+                            <th>Cliente / Nota</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="licenses-table-body">
+                        <tr><td colspan="5" style="text-align: center; color: var(--muted);">Cargando licencias...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var currentToken = localStorage.getItem("admin_token") || "";
+
+        function onTypeChange() {
+            var val = document.getElementById("license-type").value;
+            document.getElementById("seats-group").style.display = (val === "custom") ? "flex" : "none";
+        }
+
+        function generateAutoKey() {
+            var chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+            function rnd(n) {
+                var res = "";
+                for (var i = 0; i < n; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
+                return res;
+            }
+            var key = "SUBVOZ-" + rnd(4) + "-" + rnd(4) + "-" + rnd(4);
+            document.getElementById("custom-key").value = key;
+        }
+
+        async function doLogin() {
+            var user = document.getElementById("admin-user").value.trim();
+            var pass = document.getElementById("admin-pass").value.trim();
+            var err = document.getElementById("login-error");
+            err.style.display = "none";
+
+            try {
+                var resp = await fetch("/admin/api/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: "user=" + encodeURIComponent(user) + "&pass=" + encodeURIComponent(pass)
+                });
+                var data = await resp.json();
+                if (data.success) {
+                    currentToken = data.token;
+                    localStorage.setItem("admin_token", currentToken);
+                    document.getElementById("login-overlay").style.display = "none";
+                    loadLicenses();
+                } else {
+                    err.innerText = data.message || "Usuario o contraseña incorrectos";
+                    err.style.display = "block";
+                }
+            } catch (e) {
+                err.innerText = "Error al conectar con el servidor";
+                err.style.display = "block";
+            }
+        }
+
+        function doLogout() {
+            localStorage.removeItem("admin_token");
+            currentToken = "";
+            document.getElementById("login-overlay").style.display = "flex";
+        }
+
+        async function loadLicenses() {
+            if (!currentToken) {
+                document.getElementById("login-overlay").style.display = "flex";
+                return;
+            }
+
+            try {
+                var resp = await fetch("/admin/api/licenses?token=" + encodeURIComponent(currentToken));
+                var data = await resp.json();
+
+                if (!data.success) {
+                    doLogout();
+                    return;
+                }
+
+                document.getElementById("login-overlay").style.display = "none";
+                var tbody = document.getElementById("licenses-table-body");
+                tbody.innerHTML = "";
+
+                var keys = Object.keys(data.licenses || {});
+                if (keys.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--muted);">No hay licencias creadas aún.</td></tr>';
+                    return;
+                }
+
+                keys.forEach(function(k) {
+                    var item = data.licenses[k];
+                    var registered = item.registered_devices || [];
+                    var seats = item.max_seats || 1;
+                    var isMulti = seats > 1;
+
+                    var tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td><strong style="font-family: monospace; color: #34D399;">${k}</strong></td>
+                        <td><span class="badge ${isMulti ? 'badge-multi' : 'badge-single'}">${isMulti ? 'Multiusuario (' + seats + ')' : 'Monousuario (1)'}</span></td>
+                        <td><strong>${registered.length} / ${seats}</strong></td>
+                        <td>${item.note || '<em>Sin nota</em>'}</td>
+                        <td>
+                            <button class="btn btn-danger" style="padding: 4px 10px; font-size: 12px;" onclick="deleteKey('${k}')">🗑️ Eliminar</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error("Error al cargar licencias", e);
+            }
+        }
+
+        async function submitCreateKey() {
+            var note = document.getElementById("client-note").value.trim();
+            var type = document.getElementById("license-type").value;
+            var seats = type === "custom" ? parseInt(document.getElementById("seats-num").value) || 1 : 1;
+            var key = document.getElementById("custom-key").value.trim().toUpperCase();
+
+            if (!key) {
+                generateAutoKey();
+                key = document.getElementById("custom-key").value.trim().toUpperCase();
+            }
+
+            try {
+                var resp = await fetch("/admin/api/generate-key", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: "token=" + encodeURIComponent(currentToken) + "&key=" + encodeURIComponent(key) + "&seats=" + seats + "&note=" + encodeURIComponent(note)
+                });
+                var data = await resp.json();
+                if (data.success) {
+                    document.getElementById("gen-key-result").innerText = key;
+                    document.getElementById("generated-box").style.display = "block";
+                    document.getElementById("client-note").value = "";
+                    document.getElementById("custom-key").value = "";
+                    loadLicenses();
+                } else {
+                    alert("Error: " + (data.message || "No se pudo crear la clave"));
+                }
+            } catch (e) {
+                alert("Error al enviar la solicitud al servidor");
+            }
+        }
+
+        async function deleteKey(key) {
+            if (!confirm("¿Seguro que deseas eliminar la licencia " + key + "? Dispositivos activados perderán acceso.")) return;
+
+            try {
+                var resp = await fetch("/admin/api/delete-key", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: "token=" + encodeURIComponent(currentToken) + "&key=" + encodeURIComponent(key)
+                });
+                var data = await resp.json();
+                if (data.success) {
+                    loadLicenses();
+                } else {
+                    alert("Error al eliminar la clave");
+                }
+            } catch (e) {
+                alert("Error de conexión al eliminar");
+            }
+        }
+
+        function copyKeyText() {
+            var k = document.getElementById("gen-key-result").innerText;
+            navigator.clipboard.writeText(k);
+            alert("¡Clave copiada al portapapeles: " + k + "!");
+        }
+
+        function sendKeyWhatsApp() {
+            var k = document.getElementById("gen-key-result").innerText;
+            var msg = "¡Hola! Tu clave de activación de ⭐ SubVoz Pro es: " + k + "\n\nAbre SubVoz Pro, ingresa esta clave y disfruta de tu licencia de por vida. ¡Gracias por tu compra!";
+            window.open("https://wa.me/?text=" + encodeURIComponent(msg), "_blank");
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            if (currentToken) loadLicenses();
+        });
+    </script>
+</body>
+</html>

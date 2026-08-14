@@ -1,11 +1,18 @@
 import datetime
+import hashlib
 import json
 import os
+import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import urllib.parse
 
 PORT = int(os.environ.get("PORT", 8000))
 DATA_FILE = os.path.join(os.path.dirname(__file__), "licenses.json")
+
+# Credenciales de Administrador
+ADMIN_USER = os.environ.get("ADMIN_USER", "pedroadmin")
+ADMIN_PASS = os.environ.get("ADMIN_PASS", "SubVozPro2026!")
+ADMIN_TOKEN = hashlib.sha256(f"{ADMIN_USER}:{ADMIN_PASS}:SUBVOZ-ADMIN-SALT".encode()).hexdigest()
 
 
 def load_db() -> dict:
@@ -45,10 +52,14 @@ def save_db(data: dict):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
+def check_auth_token(token: str) -> bool:
+    return token and token == ADMIN_TOKEN
+
+
 class LicenseAPIHandler(BaseHTTPRequestHandler):
-    def _set_headers(self, status=200):
+    def _set_headers(self, status=200, content_type="application/json"):
         self.send_response(status)
-        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Type", content_type)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
 
@@ -79,7 +90,6 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
             device_match = next((d for d in registered if d.get("mac") == mac or d.get("hw_id") == hw_id), None)
 
             if device_match:
-                # Dispositivo previamente autorizado
                 self._set_headers(200)
                 self.wfile.write(json.dumps({
                     "success": True,
@@ -89,7 +99,6 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                 }).encode())
                 return
 
-            # Si es una nueva máquina, verificar límite de licencias/asientos
             if len(registered) >= max_seats:
                 self._set_headers(403)
                 self.wfile.write(json.dumps({
@@ -98,7 +107,6 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                 }).encode())
                 return
 
-            # Registrar la nueva máquina
             new_device = {
                 "hw_id": hw_id,
                 "mac": mac,
@@ -117,13 +125,21 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                 "max_seats": max_seats,
             }).encode())
 
-        elif self.path == "/generate-key":
+        elif self.path == "/generate-key" or self.path == "/admin/api/generate-key":
             content_len = int(self.headers.get("Content-Length", 0))
             post_body = self.rfile.read(content_len).decode("utf-8")
             parsed = urllib.parse.parse_qs(post_body)
+            
+            token = parsed.get("token", [""])[0]
             key = parsed.get("key", [""])[0].strip().upper()
             seats = int(parsed.get("seats", [1])[0])
             note = parsed.get("note", [""])[0]
+
+            # Permitir autenticación por token o script interno
+            if self.path == "/admin/api/generate-key" and not check_auth_token(token):
+                self._set_headers(401)
+                self.wfile.write(json.dumps({"success": False, "message": "No autorizado"}).encode())
+                return
 
             if not key:
                 self._set_headers(400)
@@ -140,14 +156,54 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
             save_db(db)
 
             self._set_headers(200)
-            self.wfile.write(json.dumps({"success": True, "key": key, "seats": seats}).encode())
+            self.wfile.write(json.dumps({"success": True, "key": key, "seats": seats, "note": note}).encode())
+
+        elif self.path == "/admin/api/login":
+            content_len = int(self.headers.get("Content-Length", 0))
+            post_body = self.rfile.read(content_len).decode("utf-8")
+            parsed = urllib.parse.parse_qs(post_body)
+            user = parsed.get("user", [""])[0].strip()
+            password = parsed.get("pass", [""])[0].strip()
+
+            if user == ADMIN_USER and password == ADMIN_PASS:
+                self._set_headers(200)
+                self.wfile.write(json.dumps({"success": True, "token": ADMIN_TOKEN}).encode())
+            else:
+                self._set_headers(401)
+                self.wfile.write(json.dumps({"success": False, "message": "Usuario o clave incorrectos"}).encode())
+
+        elif self.path == "/admin/api/delete-key":
+            content_len = int(self.headers.get("Content-Length", 0))
+            post_body = self.rfile.read(content_len).decode("utf-8")
+            parsed = urllib.parse.parse_qs(post_body)
+            token = parsed.get("token", [""])[0]
+            key = parsed.get("key", [""])[0].strip().upper()
+
+            if not check_auth_token(token):
+                self._set_headers(401)
+                self.wfile.write(json.dumps({"success": False, "message": "No autorizado"}).encode())
+                return
+
+            db = load_db()
+            if key in db.get("licenses", {}):
+                del db["licenses"][key]
+                save_db(db)
+                self._set_headers(200)
+                self.wfile.write(json.dumps({"success": True, "message": f"Licencia {key} eliminada"}).encode())
+            else:
+                self._set_headers(404)
+                self.wfile.write(json.dumps({"success": False, "message": "Clave no encontrada"}).encode())
 
         else:
             self._set_headers(404)
             self.wfile.write(json.dumps({"error": "Endpoint no encontrado"}).encode())
 
     def do_GET(self):
-        if self.path == "/check-update" or self.path == "/updates":
+        parsed_url = urllib.parse.urlparse(self.path)
+        path = parsed_url.path
+        query = urllib.parse.parse_qs(parsed_url.query)
+
+        if path == "/check-update" or path == "/updates":
             db = load_db()
             updates = db.get("updates", {})
             self._set_headers(200)
@@ -156,7 +212,8 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                 "html_url": "/download",
                 "notes": updates.get("release_notes", ""),
             }).encode())
-        elif self.path in ("/download", "/download/", "/ReunionPro_Portable.zip", "/SubVozPro_Portable.zip") or self.path.startswith("/downloads/"):
+
+        elif path in ("/download", "/download/", "/ReunionPro_Portable.zip", "/SubVozPro_Portable.zip") or path.startswith("/downloads/"):
             db = load_db()
             updates = db.get("updates", {})
             download_url = updates.get("download_url", "").strip()
@@ -167,48 +224,51 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 return
 
-            downloads_dir = os.path.join(os.path.dirname(__file__), "downloads")
-            zip_path = os.path.join(downloads_dir, "ReunionPro_Portable.zip")
-            if not os.path.exists(zip_path):
-                zip_path = os.path.join(os.path.dirname(__file__), "ReunionPro_Portable.zip")
+            default_rel = "https://github.com/pedroagv/API_Traductor/releases/latest/download/SubVozPro_Portable.zip"
+            self.send_response(302)
+            self.send_header("Location", default_rel)
+            self.end_headers()
 
-            if os.path.exists(zip_path):
-                self.send_response(200)
-                self.send_header("Content-Type", "application/zip")
-                self.send_header("Content-Disposition", 'attachment; filename="ReunionPro_Portable.zip"')
-                self.send_header("Content-Length", str(os.path.getsize(zip_path)))
-                self.end_headers()
-                with open(zip_path, "rb") as f:
-                    while chunk := f.read(65536):
-                        self.wfile.write(chunk)
+        elif path == "/admin" or path == "/admin/":
+            admin_path = os.path.join(os.path.dirname(__file__), "admin.html")
+            if os.path.exists(admin_path):
+                self._set_headers(200, content_type="text/html; charset=utf-8")
+                with open(admin_path, "rb") as f:
+                    self.wfile.write(f.read())
             else:
-                # Redirigir por defecto al binario de los releases de GitHub
-                default_rel = "https://github.com/pedroagv/API_Traductor/releases/latest/download/SubVozPro_Portable.zip"
-                self.send_response(302)
-                self.send_header("Location", default_rel)
-                self.end_headers()
-        elif self.path == "/api-status":
+                self._set_headers(404)
+                self.wfile.write(json.dumps({"error": "admin.html no encontrado"}).encode())
+
+        elif path == "/admin/api/licenses":
+            token = query.get("token", [""])[0]
+            if not check_auth_token(token):
+                self._set_headers(401)
+                self.wfile.write(json.dumps({"success": False, "message": "No autorizado"}).encode())
+                return
+
+            db = load_db()
             self._set_headers(200)
-            self.wfile.write(json.dumps({"status": "Reunion Pro License API Running"}).encode())
+            self.wfile.write(json.dumps({"success": True, "licenses": db.get("licenses", {})}).encode())
+
+        elif path == "/api-status":
+            self._set_headers(200)
+            self.wfile.write(json.dumps({"status": "SubVoz Pro License API Running"}).encode())
+
         else:
-            # Servir la Landing Page HTML
             landing_path = os.path.join(os.path.dirname(__file__), "landing.html")
             if os.path.exists(landing_path):
-                self.send_response(200)
-                self.send_header("Content-Type", "text/html; charset=utf-8")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
+                self._set_headers(200, content_type="text/html; charset=utf-8")
                 with open(landing_path, "rb") as f:
                     self.wfile.write(f.read())
             else:
                 self._set_headers(200)
-                self.wfile.write(json.dumps({"status": "Reunion Pro License API Running"}).encode())
+                self.wfile.write(json.dumps({"status": "SubVoz Pro License API Running"}).encode())
 
 
 def run_server():
     server_address = ("", PORT)
     httpd = HTTPServer(server_address, LicenseAPIHandler)
-    print(f"🚀 Servidor API de Licencias Reunion AI Pro ejecutándose en el puerto {PORT}...")
+    print(f"🚀 Servidor API de Licencias SubVoz Pro ejecutándose en el puerto {PORT}...")
     httpd.serve_forever()
 
 
