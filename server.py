@@ -153,9 +153,28 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
             self._set_headers(200)
             self.wfile.write(json.dumps({
                 "tag_name": updates.get("latest_version", "1.0.0"),
-                "html_url": updates.get("download_url", ""),
+                "html_url": "/download",
                 "notes": updates.get("release_notes", ""),
             }).encode())
+        elif self.path in ("/download", "/download/", "/ReunionPro_Portable.zip") or self.path.startswith("/downloads/"):
+            downloads_dir = os.path.join(os.path.dirname(__file__), "downloads")
+            zip_path = os.path.join(downloads_dir, "ReunionPro_Portable.zip")
+            if not os.path.exists(zip_path):
+                # Si aún no existe la subcarpeta downloads, buscar en la raíz de API
+                zip_path = os.path.join(os.path.dirname(__file__), "ReunionPro_Portable.zip")
+
+            if os.path.exists(zip_path):
+                self.send_response(200)
+                self.send_header("Content-Type", "application/zip")
+                self.send_header("Content-Disposition", 'attachment; filename="ReunionPro_Portable.zip"')
+                self.send_header("Content-Length", str(os.path.getsize(zip_path)))
+                self.end_headers()
+                with open(zip_path, "rb") as f:
+                    while chunk := f.read(65536):
+                        self.wfile.write(chunk)
+            else:
+                self._set_headers(404)
+                self.wfile.write(json.dumps({"error": "El archivo portable aún no ha sido subido al servidor."}).encode())
         elif self.path == "/api-status":
             self._set_headers(200)
             self.wfile.write(json.dumps({"status": "Reunion Pro License API Running"}).encode())
