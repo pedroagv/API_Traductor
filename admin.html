@@ -261,25 +261,6 @@
             document.getElementById("login-overlay").style.display = "flex";
         }
 
-        async function loadLicenses() {
-            if (!currentToken) {
-                document.getElementById("login-overlay").style.display = "flex";
-                return;
-            }
-
-            try {
-                var resp = await fetch("/admin/api/licenses?token=" + encodeURIComponent(currentToken));
-                var data = await resp.json();
-
-                if (!data.success) {
-                    doLogout();
-                    return;
-                }
-
-                document.getElementById("login-overlay").style.display = "none";
-                var tbody = document.getElementById("licenses-table-body");
-                tbody.innerHTML = "";
-
         function formatDate(isoStr) {
             if (!isoStr) return '<span style="color: var(--muted);">Sin actividad</span>';
             try {
