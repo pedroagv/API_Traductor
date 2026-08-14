@@ -453,7 +453,11 @@
                     tr.innerHTML = `
                         <td><strong style="color: #60A5FA; font-family: monospace;">${t.id}</strong><br><span style="font-size: 11px; color: var(--muted);">${formatDate(t.created_at)}</span></td>
                         <td><strong style="color: #F8FAFC;">${t.subject || 'Sin Asunto'}</strong><br><span class="badge badge-single" style="font-size: 10px;">${t.category || 'Soporte'}</span></td>
-                        <td><span style="font-size: 12px;">💻 ${t.hostname || 'PC'}<br><code>${t.mac || t.hw_id || ''}</code></span></td>
+                        <td style="max-width: 220px;">
+                            <div style="font-size: 13px; font-weight: 700; color: #34D399;">👤 ${t.contact_info || 'Sin Contacto'}</div>
+                            <div style="font-size: 11px; color: #F59E0B; margin-top: 2px;">🔑 Clave: <strong>${t.license_key || 'Prueba Gratis'}</strong></div>
+                            <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">💻 ${t.hostname || 'PC'} (<code>${t.mac || t.hw_id || ''}</code>)</div>
+                        </td>
                         <td style="max-width: 260px;">
                             <div style="font-size: 13px; max-height: 80px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 6px;">${t.message || 'Sin mensaje'}</div>
                             ${hasLogs ? `<details style="margin-top: 4px; font-size: 11px; color: #F59E0B;"><summary>📄 Ver Logs de la App (${t.logs.length} chars)</summary><pre style="white-space: pre-wrap; font-size: 10px; max-height: 120px; overflow-y: auto; background: #0F172A; padding: 6px; margin-top: 4px;">${t.logs}</pre></details>` : ''}

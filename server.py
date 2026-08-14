@@ -273,6 +273,8 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
             hw_id = parsed.get("hw_id", [""])[0].strip()
             mac = parsed.get("mac", [""])[0].strip()
             hostname = parsed.get("hostname", [""])[0].strip()
+            contact_info = parsed.get("contact_info", [""])[0].strip()
+            license_key = parsed.get("license_key", [""])[0].strip().upper()
             subject = parsed.get("subject", ["Soporte Técnico"])[0].strip()
             category = parsed.get("category", ["Soporte Técnico"])[0].strip()
             message = parsed.get("message", [""])[0].strip()
@@ -296,6 +298,8 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                 "hw_id": hw_id,
                 "mac": mac,
                 "hostname": hostname,
+                "contact_info": contact_info or "Sin contacto especificado",
+                "license_key": license_key or "Período de Prueba Gratis",
                 "subject": subject,
                 "category": category,
                 "message": message,
