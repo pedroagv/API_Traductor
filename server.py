@@ -10,7 +10,7 @@ from wsgiref.simple_server import make_server
 
 PORT = int(os.environ.get("PORT", 8000))
 DATA_FILE = os.path.join(os.path.dirname(__file__), "licenses.json")
-TRIAL_DAYS = 60
+TRIAL_DAYS = 30
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://ilzwqheusmcqjppjuxac.supabase.co").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "sb_publishable_N8cqypOpe_lTtjBI4UrPnA_IVz8Xyzy")
@@ -282,7 +282,7 @@ def evaluate_device(dev: dict) -> dict:
     if can_run:
         msg = f"Período de prueba gratis ({days_left} días restantes)"
     else:
-        msg = "Período de prueba gratis de 60 días finalizado. Requiere licencia."
+        msg = "Período de prueba gratis de 30 días finalizado. Requiere licencia."
 
     return {
         "can_run": can_run,
