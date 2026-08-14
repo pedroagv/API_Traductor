@@ -586,21 +586,34 @@
                     </a>
                 </div>
 
-                <!-- Card Nequi -->
+                <!-- Card Licencia Personal con Selector de Tiempo -->
                 <div class="price-card featured" style="background: linear-gradient(180deg, #EFF6FF 0%, #FFFFFF 100%);">
                     <div>
-                        <div class="price-title" style="color: #1E40AF;">⚡ Licencia Vitalicia</div>
-                        <p style="color: #2563EB;">Pago único sin mensualidades</p>
-                        <div class="price-num" style="color: #1E3A8A;">$30.000 <span>COP / pago único</span></div>
+                        <div class="price-title" style="color: #1E40AF;">⚡ Licencia Personal / Pro</div>
+                        <p style="color: #2563EB;">Elige el tiempo que deseas usarlo</p>
+                        <div class="price-num" id="user-price-display" style="color: #1E3A8A;">$15.000 <span style="font-size: 13px;">COP / 1 Mes</span></div>
+
+                        <div style="margin: 14px 0; background: #F1F5F9; border: 1px solid #CBD5E1; padding: 12px; border-radius: 10px;">
+                            <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 6px;">
+                                Selecciona la duración de tu licencia:
+                            </label>
+                            <select id="user-duration-select" onchange="updateUserQuote()" style="width: 100%; background: #FFFFFF; border: 1px solid #94A3B8; color: #0F172A; font-size: 15px; font-weight: 700; padding: 8px 12px; border-radius: 8px; outline: none;">
+                                <option value="1">1 Mes ($15.000 COP)</option>
+                                <option value="3">3 Meses ($35.000 COP - Ahorras $10k)</option>
+                                <option value="6">6 Meses ($60.000 COP - Ahorras $30k)</option>
+                                <option value="12" selected>12 Meses / 1 Año ($90.000 COP - ¡Mejor Precio!)</option>
+                            </select>
+                        </div>
+
                         <ul class="price-list">
-                            <li>✅ <strong>Licencia de por vida</strong> para tu equipo</li>
+                            <li>✅ <strong>Acceso Ilimitado</strong> por el tiempo elegido</li>
                             <li>✅ Actualizaciones futuras incluidas</li>
                             <li>✅ Pago fácil por <strong>QR, Nequi o Transferencia</strong></li>
                             <li>✅ Para que el creador coma algo rico 🍔☕</li>
                         </ul>
                     </div>
-                    <a href="https://wa.me/573008443272?text=¡Hola%20Pedro!%20Deseo%20adquirir%20mi%20Licencia%20Vitalicia%20de%20SubVoz%20Pro" target="_blank" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 20px;">
-                        Comprar Licencia Vitalicia ($30.000 COP)
+                    <a id="user-whatsapp-btn" href="#" target="_blank" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 20px;">
+                        💬 Comprar Licencia por 1 Año ($90.000 COP)
                     </a>
                 </div>
 
@@ -675,7 +688,34 @@
             document.getElementById("corp-whatsapp-btn").href = "https://wa.me/573008443272?text=" + encodeURIComponent(msg);
             document.getElementById("corp-whatsapp-btn").innerHTML = "💬 Cotizar " + seats + " Equipos por WhatsApp";
         }
-        document.addEventListener("DOMContentLoaded", updateCorpQuote);
+        function updateUserQuote() {
+            var dur = document.getElementById("user-duration-select").value;
+            var priceStr = "$15.000";
+            var textLabel = "1 Mes";
+            var totalStr = "$15.000 COP";
+            var labelBtn = "1 Mes ($15.000 COP)";
+            
+            if (dur === "1") {
+                priceStr = "$15.000"; textLabel = "1 Mes"; totalStr = "$15.000 COP"; labelBtn = "1 Mes ($15.000 COP)";
+            } else if (dur === "3") {
+                priceStr = "$35.000"; textLabel = "3 Meses"; totalStr = "$35.000 COP"; labelBtn = "3 Meses ($35.000 COP)";
+            } else if (dur === "6") {
+                priceStr = "$60.000"; textLabel = "6 Meses"; totalStr = "$60.000 COP"; labelBtn = "6 Meses ($60.000 COP)";
+            } else if (dur === "12") {
+                priceStr = "$90.000"; textLabel = "12 Meses (1 Año)"; totalStr = "$90.000 COP"; labelBtn = "1 Año ($90.000 COP)";
+            }
+
+            document.getElementById("user-price-display").innerHTML = priceStr + " <span style='font-size: 13px;'>COP / " + textLabel + "</span>";
+            
+            var msg = "¡Hola Pedro! Deseo adquirir mi Licencia de ⭐ SubVoz Pro por " + textLabel + " (" + totalStr + ").";
+            document.getElementById("user-whatsapp-btn").href = "https://wa.me/573008443272?text=" + encodeURIComponent(msg);
+            document.getElementById("user-whatsapp-btn").innerHTML = "💬 Comprar Licencia por " + labelBtn;
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            updateCorpQuote();
+            updateUserQuote();
+        });
     </script>
 
 </body>

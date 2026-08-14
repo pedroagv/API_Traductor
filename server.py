@@ -85,17 +85,39 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
             lic_data = licenses[key]
             max_seats = lic_data.get("max_seats", 1)
             registered = lic_data.get("registered_devices", [])
+            expires_at_str = lic_data.get("expires_at")
+
+            # Comprobar expiración por tiempo (meses)
+            if expires_at_str:
+                try:
+                    exp_dt = datetime.datetime.fromisoformat(expires_at_str)
+                    if datetime.datetime.now() > exp_dt:
+                        self._set_headers(403)
+                        self.wfile.write(json.dumps({
+                            "success": False,
+                            "message": f"La licencia de esta clave ha expirado el {exp_dt.strftime('%d/%m/%Y')}.",
+                            "expired": True,
+                        }).encode())
+                        return
+                except Exception:
+                    pass
 
             # Comprobar si este dispositivo (MAC o HWID) ya está registrado
             device_match = next((d for d in registered if d.get("mac") == mac or d.get("hw_id") == hw_id), None)
+            now_iso = datetime.datetime.now().isoformat()
 
             if device_match:
+                device_match["last_seen"] = now_iso
+                lic_data["last_activity"] = now_iso
+                save_db(db)
+
                 self._set_headers(200)
                 self.wfile.write(json.dumps({
                     "success": True,
                     "message": "Dispositivo autorizado.",
                     "seats_used": len(registered),
                     "max_seats": max_seats,
+                    "expires_at": expires_at_str,
                 }).encode())
                 return
 
@@ -111,10 +133,12 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                 "hw_id": hw_id,
                 "mac": mac,
                 "hostname": hostname,
-                "activated_at": datetime.datetime.now().isoformat(),
+                "activated_at": now_iso,
+                "last_seen": now_iso,
             }
             registered.append(new_device)
             lic_data["registered_devices"] = registered
+            lic_data["last_activity"] = now_iso
             save_db(db)
 
             self._set_headers(200)
@@ -123,6 +147,7 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                 "message": f"¡Licencia activada con éxito en este equipo! ({len(registered)}/{max_seats} licencias usadas)",
                 "seats_used": len(registered),
                 "max_seats": max_seats,
+                "expires_at": expires_at_str,
             }).encode())
 
         elif self.path == "/generate-key" or self.path == "/admin/api/generate-key":
@@ -134,8 +159,8 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
             key = parsed.get("key", [""])[0].strip().upper()
             seats = int(parsed.get("seats", [1])[0])
             note = parsed.get("note", [""])[0]
+            months = int(parsed.get("months", [0])[0])
 
-            # Permitir autenticación por token o script interno
             if self.path == "/admin/api/generate-key" and not check_auth_token(token):
                 self._set_headers(401)
                 self.wfile.write(json.dumps({"success": False, "message": "No autorizado"}).encode())
@@ -146,17 +171,23 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"success": False, "message": "Falta parametro key"}).encode())
                 return
 
+            expires_at = None
+            if months > 0:
+                expires_at = (datetime.datetime.now() + datetime.timedelta(days=30 * months)).isoformat()
+
             db = load_db()
             db["licenses"][key] = {
                 "max_seats": seats,
                 "registered_devices": [],
                 "created_at": datetime.datetime.now().isoformat(),
+                "duration_months": months,
+                "expires_at": expires_at,
                 "note": note,
             }
             save_db(db)
 
             self._set_headers(200)
-            self.wfile.write(json.dumps({"success": True, "key": key, "seats": seats, "note": note}).encode())
+            self.wfile.write(json.dumps({"success": True, "key": key, "seats": seats, "expires_at": expires_at, "note": note}).encode())
 
         elif self.path == "/admin/api/login":
             content_len = int(self.headers.get("Content-Length", 0))
