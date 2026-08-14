@@ -5,10 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>⭐ SubVoz Pro - Traducción y Subtítulos de Voz en Vivo</title>
     <meta name="description" content="Software de traducción de voz en tiempo real para reuniones, clases y videos. 100% Portable, multidioma (EN, ES, FR, DE, IT, PT) y 2 meses gratis.">
-    
+
+    <!-- Open Graph / Redes Sociales -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="⭐ SubVoz Pro - Traducción y Subtítulos de Voz en Vivo">
+    <meta property="og:description" content="Traducción automática flotante para Teams, Zoom, Meet y clases virtuales. 100% local y privado, sin instalación.">
+    <meta property="og:locale" content="es_CO">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="⭐ SubVoz Pro - Traducción y Subtítulos de Voz en Vivo">
+    <meta name="twitter:description" content="Traducción automática flotante para Teams, Zoom, Meet y clases virtuales. 100% local y privado, sin instalación.">
+
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%AD%90%3C/text%3E%3C/svg%3E">
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -84,21 +96,66 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 22px 0;
+            padding: 18px 0;
             border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(248, 250, 252, 0.82);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
 
         .brand {
             font-family: 'Outfit', sans-serif;
-            font-size: 24px;
+            font-size: 21px;
             font-weight: 800;
-            background: linear-gradient(135deg, #1E40AF 0%, #6D28D9 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #0F172A;
+            -webkit-text-fill-color: initial;
             display: flex;
             align-items: center;
             gap: 10px;
         }
+
+        .brand-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%);
+            font-size: 17px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
+        }
+
+        .nav-toggle {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            width: 40px;
+            height: 40px;
+            background: #FFFFFF;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .nav-toggle span {
+            display: block;
+            width: 18px;
+            height: 2px;
+            background: #1E293B;
+            border-radius: 2px;
+            transition: transform 0.25s ease, opacity 0.2s ease;
+        }
+
+        .nav-toggle.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        .nav-toggle.open span:nth-child(2) { opacity: 0; }
+        .nav-toggle.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
         .brand-badge {
             font-size: 11px;
@@ -437,10 +494,75 @@
             }
         }
 
+        /* Animación de aparición al hacer scroll */
+        .reveal {
+            opacity: 0;
+            transform: translateY(18px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .grid-features .reveal:nth-child(2) { transition-delay: 0.06s; }
+        .grid-features .reveal:nth-child(3) { transition-delay: 0.12s; }
+        .grid-features .reveal:nth-child(4) { transition-delay: 0.18s; }
+        .grid-features .reveal:nth-child(5) { transition-delay: 0.24s; }
+        .grid-features .reveal:nth-child(6) { transition-delay: 0.3s; }
+        .pricing-container .reveal:nth-child(2) { transition-delay: 0.06s; }
+        .pricing-container .reveal:nth-child(3) { transition-delay: 0.12s; }
+        .pricing-container .reveal:nth-child(4) { transition-delay: 0.18s; }
+
+        /* Franja de confianza bajo los botones del hero */
+        .trust-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 28px;
+            flex-wrap: wrap;
+            margin: -14px 0 40px;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .trust-row span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
         @media (max-width: 768px) {
             .hero h1 { font-size: 38px; }
             .hero p { font-size: 16px; }
-            .nav-links { display: none; }
+
+            .nav-toggle { display: flex; }
+
+            .nav-links {
+                position: absolute;
+                top: 100%;
+                left: 24px;
+                right: 24px;
+                flex-direction: column;
+                align-items: stretch;
+                background: var(--bg-card);
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                margin-top: 8px;
+                padding: 0 16px;
+                gap: 10px;
+                max-height: 0;
+                overflow: hidden;
+                opacity: 0;
+                box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+                transition: max-height 0.3s ease, opacity 0.2s ease, padding 0.3s ease;
+            }
+            .nav-links.open {
+                max-height: 260px;
+                opacity: 1;
+                padding: 16px;
+            }
+            .nav-links a { width: 100%; justify-content: center; }
         }
 
         @media (max-width: 640px) {
@@ -458,9 +580,12 @@
         <!-- Navbar -->
         <nav>
             <div class="brand">
-                ⭐ SubVoz Pro <span class="brand-badge">v1.0</span>
+                <span class="brand-icon">⭐</span> SubVoz Pro <span class="brand-badge">v1.0</span>
             </div>
-            <div class="nav-links">
+            <button class="nav-toggle" id="nav-toggle" aria-label="Abrir menú" aria-expanded="false">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="nav-links" id="nav-links">
                 <a href="#caracteristicas" class="btn btn-outline" style="padding: 8px 16px; font-size: 14px;">Características</a>
                 <a href="#precios" class="btn btn-outline" style="padding: 8px 16px; font-size: 14px;">Precios</a>
                 <a href="https://wa.me/573008443272?text=Hola!%20Deseo%20contactar%20con%20ventas%20de%20SubVoz%20Pro" target="_blank" class="btn btn-whatsapp" style="padding: 8px 16px; font-size: 14px;">💼 Contactar a Ventas</a>
@@ -485,6 +610,12 @@
                 <a href="https://wa.me/573008443272?text=¡Hola!%20Deseo%20contactar%20con%20el%20departamento%20de%20ventas%20de%20SubVoz%20Pro" target="_blank" class="btn btn-whatsapp">
                     💼 Contactar con Ventas (+57 3008443272)
                 </a>
+            </div>
+
+            <div class="trust-row">
+                <span>🔒 100% Local y Privado</span>
+                <span>🚫 Sin Tarjeta de Crédito</span>
+                <span>📦 Sin Instalación</span>
             </div>
 
             <!-- Demo Window Preview (Fondo Oscuro para destacar los subtítulos) -->
@@ -545,32 +676,32 @@
             </div>
 
             <div class="grid-features">
-                <div class="feature-card">
+                <div class="feature-card reveal">
                     <span class="feature-icon">⚡</span>
                     <h3>Velocidad en Tiempo Real</h3>
                     <p>Procesamiento directo de audio acelerado por GPU o CPU. Los subtítulos aparecen mientras la otra persona está hablando.</p>
                 </div>
-                <div class="feature-card">
+                <div class="feature-card reveal">
                     <span class="feature-icon">🌐</span>
                     <h3>6 Idiomas Soportados</h3>
                     <p>Traduce instantáneamente entre 🇺🇸 Inglés, 🇪🇸 Español, 🇫🇷 Francés, 🇩🇪 Alemán, 🇮🇹 Italiano y 🇵🇹 Portugués.</p>
                 </div>
-                <div class="feature-card">
+                <div class="feature-card reveal">
                     <span class="feature-icon">📦</span>
                     <h3>100% Portable (Sin Instalación)</h3>
                     <p>No requiere instalación ni permisos de administrador. Cópialo en una carpeta o USB y ejecútalo en cualquier PC.</p>
                 </div>
-                <div class="feature-card">
+                <div class="feature-card reveal">
                     <span class="feature-icon">📌</span>
                     <h3>Ventana Flotante Siempre Visible</h3>
                     <p>Mantén los subtítulos superpuestos encima de tus llamadas de Microsoft Teams, Zoom, Google Meet, videos de YouTube o juegos.</p>
                 </div>
-                <div class="feature-card">
+                <div class="feature-card reveal">
                     <span class="feature-icon">🔒</span>
                     <h3>Privacidad Privada 100%</h3>
                     <p>Tu voz se procesa localmente en tu propia máquina. Ningún audio ni conversación se envía a servidores de terceros.</p>
                 </div>
-                <div class="feature-card">
+                <div class="feature-card reveal">
                     <span class="feature-icon">⌨️</span>
                     <h3>Escritura en Caliente</h3>
                     <p>Incluye panel para escribir texto manualmente y obtener traducciones instantáneas al vuelo con opción de copiar.</p>
@@ -587,7 +718,7 @@
 
             <div class="pricing-container">
                 <!-- Card Trial -->
-                <div class="price-card">
+                <div class="price-card reveal">
                     <div>
                         <div class="price-title">🎁 Prueba Completa</div>
                         <p style="color: var(--text-muted);">Prueba todas las funciones sin restricciones</p>
@@ -604,7 +735,7 @@
                 </div>
 
                 <!-- Card Licencia Personal con Selector de Tiempo -->
-                <div class="price-card featured" style="background: linear-gradient(180deg, #EFF6FF 0%, #FFFFFF 100%);">
+                <div class="price-card featured reveal" style="background: linear-gradient(180deg, #EFF6FF 0%, #FFFFFF 100%);">
                     <div>
                         <div class="price-title" style="color: #1E40AF;">⚡ Licencia Personal / Pro</div>
                         <p style="color: #2563EB;">Elige el tiempo que deseas usarlo</p>
@@ -635,7 +766,7 @@
                 </div>
 
                 <!-- Card Social Beca -->
-                <div class="price-card" style="border-color: #FDE68A; background: linear-gradient(180deg, #FFFBEB 0%, #FFFFFF 100%);">
+                <div class="price-card reveal" style="border-color: #FDE68A; background: linear-gradient(180deg, #FFFBEB 0%, #FFFFFF 100%);">
                     <div>
                         <div class="price-title" style="color: #92400E;">❤️ Licencia Social / Beca</div>
                         <p style="color: #D97706;">Primero ayudar a las personas</p>
@@ -652,7 +783,7 @@
                 </div>
 
                 <!-- Card Corporativa / Empresas (Tailwind CSS Deluxe) -->
-                <div class="bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 text-white rounded-2xl p-8 border-2 border-indigo-500/40 shadow-2xl relative overflow-hidden flex flex-col justify-between">
+                <div class="reveal bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 text-white rounded-2xl p-8 border-2 border-indigo-500/40 shadow-2xl relative overflow-hidden flex flex-col justify-between">
                     <div class="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
                     
                     <div>
@@ -736,6 +867,10 @@
 
         <!-- Footer -->
         <footer>
+            <div style="display:flex; align-items:center; justify-content:center; gap:8px; font-family:'Outfit',sans-serif; font-weight:800; font-size:16px; color:#0F172A; margin-bottom:12px;">
+                <span class="brand-icon" style="width:26px; height:26px; font-size:13px; border-radius:8px;">⭐</span>
+                SubVoz Pro
+            </div>
             <p>© 2026 ⭐ SubVoz Pro. Desarrollado con tecnología de procesamiento local para privacidad total.</p>
             <p style="margin-top: 6px; font-size: 13px;">Soporte, Ventas y Cotizaciones Empresariales por WhatsApp: <strong>+57 3008443272</strong></p>
         </footer>
@@ -797,9 +932,48 @@
             document.getElementById("user-whatsapp-btn").innerHTML = "💼 Contactar con Ventas - " + labelBtn;
         }
 
+        function initNavToggle() {
+            var toggle = document.getElementById("nav-toggle");
+            var links = document.getElementById("nav-links");
+            if (!toggle || !links) return;
+
+            toggle.addEventListener("click", function() {
+                var isOpen = links.classList.toggle("open");
+                toggle.classList.toggle("open", isOpen);
+                toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+            });
+
+            links.querySelectorAll("a").forEach(function(link) {
+                link.addEventListener("click", function() {
+                    links.classList.remove("open");
+                    toggle.classList.remove("open");
+                    toggle.setAttribute("aria-expanded", "false");
+                });
+            });
+        }
+
+        function initScrollReveal() {
+            var els = document.querySelectorAll(".reveal");
+            if (!("IntersectionObserver" in window)) {
+                els.forEach(function(el) { el.classList.add("visible"); });
+                return;
+            }
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add("visible");
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.15 });
+            els.forEach(function(el) { observer.observe(el); });
+        }
+
         document.addEventListener("DOMContentLoaded", function() {
             updateCorpQuote();
             updateUserQuote();
+            initNavToggle();
+            initScrollReveal();
         });
     </script>
 

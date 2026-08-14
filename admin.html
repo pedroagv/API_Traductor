@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>⭐ SubVoz Pro - Panel de Administración</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%AD%90%3C/text%3E%3C/svg%3E">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -19,46 +20,137 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 20px; line-height: 1.5; }
-        .container { max-width: 1100px; margin: 0 auto; }
-        
-        header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
-        .brand { font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800; background: linear-gradient(135deg, #60A5FA, #A78BFA); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            line-height: 1.5;
+            position: relative;
+            min-height: 100vh;
+        }
 
-        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 8px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; text-decoration: none; transition: 0.2s ease; }
-        .btn-primary { background: var(--primary); color: #fff; }
-        .btn-primary:hover { background: #2563EB; }
-        .btn-green { background: var(--green); color: #fff; }
-        .btn-green:hover { background: #059669; }
-        .btn-danger { background: rgba(239, 68, 68, 0.15); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.3); }
+        /* Resplandor ambiental, mismo lenguaje visual que la landing page */
+        body::before {
+            content: "";
+            position: fixed;
+            top: -180px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 900px;
+            height: 480px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.14) 0%, rgba(139, 92, 246, 0.08) 45%, rgba(15, 23, 42, 0) 75%);
+            filter: blur(60px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container { max-width: 1100px; margin: 0 auto; position: relative; z-index: 1; }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 28px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 0 0 14px 14px;
+            margin-left: -20px;
+            margin-right: -20px;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+        .brand { font-family: 'Outfit', sans-serif; font-size: 19px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+        .brand-icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; border-radius: 10px; font-size: 16px;
+            background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+        }
+        .brand-text { background: linear-gradient(135deg, #60A5FA, #A78BFA); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 10px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; text-decoration: none; transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease; }
+        .btn-primary { background: linear-gradient(135deg, #3B82F6 0%, #6D5CE9 100%); color: #fff; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3); }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(139, 92, 246, 0.35); }
+        .btn-green { background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #fff; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.28); }
+        .btn-green:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(16, 185, 129, 0.35); }
+        .btn-danger { background: rgba(239, 68, 68, 0.12); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.3); }
         .btn-danger:hover { background: var(--red); color: #fff; }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
-        .btn-outline:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+        .btn-outline { background: rgba(255,255,255,0.02); border: 1px solid var(--border); color: var(--muted); }
+        .btn-outline:hover { background: rgba(255,255,255,0.06); color: var(--text); border-color: #475569; }
 
-        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 24px; }
-        .card h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .card {
+            background: linear-gradient(180deg, var(--card-bg) 0%, rgba(30, 41, 59, 0.6) 100%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 30px rgba(2, 6, 23, 0.35);
+        }
+        .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+        .card h2 .icon-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 30px; height: 30px; border-radius: 9px; font-size: 15px; flex-shrink: 0;
+            background: rgba(96, 165, 250, 0.12); border: 1px solid rgba(96, 165, 250, 0.25);
+        }
 
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px; }
         .form-group { display: flex; flex-direction: column; gap: 6px; }
         label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-        input, select { background: #0F172A; border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 8px; font-size: 14px; outline: none; }
-        input:focus, select:focus { border-color: var(--primary); }
+        input, select {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border); color: var(--text);
+            padding: 10px 12px; border-radius: 9px; font-size: 14px; outline: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18); }
 
-        .generated-box { background: rgba(16, 185, 129, 0.1); border: 1px dashed var(--green); border-radius: 10px; padding: 16px; margin-top: 16px; display: none; }
+        .generated-box { background: rgba(16, 185, 129, 0.08); border: 1px dashed var(--green); border-radius: 12px; padding: 16px; margin-top: 18px; display: none; }
         .generated-key { font-family: monospace; font-size: 18px; font-weight: 800; color: #34D399; letter-spacing: 1px; }
 
+        .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
         table { width: 100%; border-collapse: collapse; text-align: left; }
-        th, td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 14px; }
-        th { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--muted); background: rgba(0,0,0,0.2); }
-        tr:hover { background: rgba(255,255,255,0.02); }
+        th, td { padding: 13px 16px; border-bottom: 1px solid var(--border); font-size: 14px; }
+        tbody tr:last-child td { border-bottom: none; }
+        th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); background: rgba(0,0,0,0.25); }
+        tbody tr { transition: background 0.15s ease; }
+        tbody tr:hover { background: rgba(255,255,255,0.03); }
 
-        .badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px; text-transform: uppercase; }
+        .badge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
         .badge-single { background: rgba(59, 130, 246, 0.15); color: #60A5FA; border: 1px solid rgba(59, 130, 246, 0.3); }
         .badge-multi { background: rgba(139, 92, 246, 0.15); color: #A78BFA; border: 1px solid rgba(139, 92, 246, 0.3); }
+        .badge-status-open { background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge-status-progress { background: rgba(59, 130, 246, 0.15); color: #60A5FA; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .badge-status-done { background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
 
         /* Modal Login */
-        .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 999; }
-        .login-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 100%; max-width: 380px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
+        .login-box {
+            background: linear-gradient(180deg, var(--card-bg) 0%, rgba(30, 41, 59, 0.85) 100%);
+            border: 1px solid var(--border);
+            border-radius: 18px; padding: 36px; width: 100%; max-width: 380px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(139, 92, 246, 0.08);
+        }
+        .login-icon {
+            width: 56px; height: 56px; border-radius: 16px; margin: 0 auto 16px;
+            display: flex; align-items: center; justify-content: center; font-size: 26px;
+            background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+        }
+
+        @media (max-width: 640px) {
+            body { padding: 14px; }
+            header { flex-direction: column; align-items: stretch; }
+            .card { padding: 18px; }
+        }
     </style>
 </head>
 <body>
@@ -66,8 +158,9 @@
     <!-- Pantalla de Login -->
     <div id="login-overlay" class="login-overlay">
         <div class="login-box">
-            <h2 style="font-family: 'Outfit', sans-serif; font-size: 24px; text-align: center; margin-bottom: 8px;">🔐 Panel Admin</h2>
-            <p style="color: var(--muted); font-size: 13px; text-align: center; margin-bottom: 24px;">⭐ SubVoz Pro - Licenciamiento</p>
+            <div class="login-icon">🔐</div>
+            <h2 style="font-family: 'Outfit', sans-serif; font-size: 22px; text-align: center; margin-bottom: 6px;">Panel Admin</h2>
+            <p style="color: var(--muted); font-size: 13px; text-align: center; margin-bottom: 28px;">⭐ SubVoz Pro · Licenciamiento</p>
             <div class="form-group" style="margin-bottom: 16px;">
                 <label>Usuario</label>
                 <input type="text" id="admin-user" placeholder="laconcha" value="laconcha">
@@ -84,16 +177,16 @@
     <!-- Panel de Control Principal -->
     <div class="container">
         <header>
-            <div class="brand">⭐ SubVoz Pro - Admin Panel</div>
-            <div style="display: flex; gap: 10px; align-items: center;">
+            <div class="brand"><span class="brand-icon">⭐</span> <span class="brand-text">SubVoz Pro</span>&nbsp;· Admin Panel</div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                 <button class="btn btn-outline" onclick="toggleCredsModal()">⚙️ Cambiar Credenciales</button>
                 <button class="btn btn-outline" onclick="doLogout()">🚪 Cerrar Sesión</button>
             </div>
         </header>
 
         <!-- Modal Cambiar Credenciales -->
-        <div id="creds-box" class="card" style="display: none; border-color: var(--purple); background: rgba(139, 92, 246, 0.05);">
-            <h2>⚙️ Cambiar Usuario y Contraseña de Administrador</h2>
+        <div id="creds-box" class="card" style="display: none; border-color: var(--purple); background: rgba(139, 92, 246, 0.08);">
+            <h2><span class="icon-badge">⚙️</span> Cambiar Usuario y Contraseña de Administrador</h2>
             <div class="form-grid">
                 <div class="form-group">
                     <label>Nuevo Usuario</label>
@@ -112,7 +205,7 @@
 
         <!-- Sección Generador de Claves -->
         <div class="card">
-            <h2>🔑 Crear / Generar Nueva Licencia</h2>
+            <h2><span class="icon-badge">🔑</span> Crear / Generar Nueva Licencia</h2>
             <div class="form-grid">
                 <div class="form-group">
                     <label>Nombre / Nota del Cliente</label>
@@ -162,10 +255,10 @@
         <!-- Lista de Licencias Existentes -->
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <h2>📋 Licencias Registradas en el Sistema</h2>
+                <h2 style="margin-bottom: 0;"><span class="icon-badge">📋</span> Licencias Registradas en el Sistema</h2>
                 <button class="btn btn-outline" onclick="loadLicenses()">🔄 Actualizar Lista</button>
             </div>
-            <div style="overflow-x: auto;">
+            <div class="table-wrap">
                 <table>
                     <thead>
                         <tr>
@@ -181,13 +274,16 @@
                         <tr><td colspan="5" style="text-align: center; color: var(--muted);">Cargando licencias...</td></tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
         <!-- Centro de Soporte y Tickets -->
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <h2>🎟️ Centro de Soporte, Tickets y Solicitudes de Reunión</h2>
+                <h2 style="margin-bottom: 0;"><span class="icon-badge">🎟️</span> Centro de Soporte, Tickets y Solicitudes de Reunión</h2>
                 <button class="btn btn-outline" onclick="loadTickets()">🔄 Actualizar Tickets</button>
             </div>
-            <div style="overflow-x: auto;">
+            <div class="table-wrap">
                 <table>
                     <thead>
                         <tr>
@@ -259,6 +355,13 @@
             localStorage.removeItem("admin_token");
             currentToken = "";
             document.getElementById("login-overlay").style.display = "flex";
+        }
+
+        function statusBadgeClass(status) {
+            var s = (status || "").toLowerCase();
+            if (s.indexOf("resuelto") !== -1 || s.indexOf("✅") !== -1) return "badge-status-done";
+            if (s.indexOf("revisión") !== -1 || s.indexOf("reunión") !== -1 || s.indexOf("🛠") !== -1 || s.indexOf("📅") !== -1) return "badge-status-progress";
+            return "badge-status-open";
         }
 
         function formatDate(isoStr) {
@@ -443,7 +546,7 @@
                             <div style="font-size: 13px; max-height: 80px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 6px;">${t.message || 'Sin mensaje'}</div>
                             ${hasLogs ? `<details style="margin-top: 4px; font-size: 11px; color: #F59E0B;"><summary>📄 Ver Logs de la App (${t.logs.length} chars)</summary><pre style="white-space: pre-wrap; font-size: 10px; max-height: 120px; overflow-y: auto; background: #0F172A; padding: 6px; margin-top: 4px;">${t.logs}</pre></details>` : ''}
                         </td>
-                        <td><strong style="font-size: 13px;">${t.status || 'Abierto ⏳'}</strong></td>
+                        <td><span class="badge ${statusBadgeClass(t.status)}">${t.status || 'Abierto ⏳'}</span></td>
                         <td style="max-width: 220px;">
                             <div style="font-size: 12px; color: #34D399;">${t.admin_reply || '<em>Sin respuesta aún</em>'}</div>
                             ${t.meeting_url ? `<a href="${t.meeting_url}" target="_blank" style="font-size: 12px; color: #60A5FA;">📅 Unirse a Reunión</a>` : ''}
