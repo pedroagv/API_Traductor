@@ -54,7 +54,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1280px;
             margin: 0 auto;
             padding: 0 24px;
             position: relative;
@@ -374,8 +374,8 @@
         /* Pricing & Social Impact Section */
         .pricing-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
             margin-top: 40px;
         }
 
@@ -383,7 +383,7 @@
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 20px;
-            padding: 40px;
+            padding: 28px 18px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -397,38 +397,38 @@
         }
 
         .price-title {
-            font-size: 22px;
+            font-size: 19px;
             font-weight: 700;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .price-num {
             font-family: 'Outfit', sans-serif;
-            font-size: 42px;
+            font-size: 32px;
             font-weight: 800;
             color: var(--text-main);
-            margin: 16px 0;
+            margin: 12px 0;
         }
 
         .price-num span {
-            font-size: 16px;
+            font-size: 13px;
             color: var(--text-muted);
             font-weight: 400;
         }
 
         .price-list {
             list-style: none;
-            margin: 24px 0;
+            margin: 16px 0;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
         }
 
         .price-list li {
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 15px;
+            gap: 8px;
+            font-size: 13px;
             color: var(--text-muted);
         }
 
@@ -446,10 +446,23 @@
             font-size: 14px;
         }
 
+        @media (max-width: 1100px) {
+            .pricing-container {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+        }
+
         @media (max-width: 768px) {
             .hero h1 { font-size: 38px; }
             .hero p { font-size: 16px; }
             .nav-links { display: none; }
+        }
+
+        @media (max-width: 640px) {
+            .pricing-container {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
