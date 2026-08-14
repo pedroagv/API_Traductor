@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
+*.log
 .env
+licenses.json
+GUIA_SECRETA_PEDRO.txt
