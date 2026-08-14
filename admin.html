@@ -203,75 +203,66 @@
             </div>
         </div>
 
-        <!-- Sección Generador de Claves -->
+        <!-- Sección Activar Dispositivo por ID -->
         <div class="card">
-            <h2><span class="icon-badge">🔑</span> Crear / Generar Nueva Licencia</h2>
+            <h2><span class="icon-badge">🔑</span> Activar Licencia por ID de Equipo</h2>
+            <p style="color: var(--muted); font-size: 13px; margin-top: -10px; margin-bottom: 16px;">
+                Ya no se generan claves. El cliente te envía su ID de equipo por WhatsApp, validas el pago y activas su plan aquí directamente.
+            </p>
             <div class="form-grid">
                 <div class="form-group">
+                    <label>ID de Equipo del Cliente</label>
+                    <input type="text" id="activate-hwid" placeholder="Ej: A1B2C3D4E5F6A7B8" style="font-family: monospace; text-transform: uppercase;">
+                </div>
+                <div class="form-group">
                     <label>Nombre / Nota del Cliente</label>
-                    <input type="text" id="client-note" placeholder="Ej: Carlos Pérez / Empresa ABC">
+                    <input type="text" id="activate-note" placeholder="Ej: Carlos Pérez / Empresa ABC">
                 </div>
                 <div class="form-group">
-                    <label>Tipo de Licencia</label>
-                    <select id="license-type" onchange="onTypeChange()">
-                        <option value="1">Monousuario ($30.000 COP - 1 equipo)</option>
-                        <option value="custom">Multiusuario / Corporativa</option>
-                    </select>
-                </div>
-                <div class="form-group" id="seats-group" style="display: none;">
-                    <label>Número de Equipos / Licencias</label>
-                    <input type="number" id="seats-num" min="1" max="500" value="5">
-                </div>
-                <div class="form-group">
-                    <label>Duración / Vigencia</label>
-                    <select id="license-duration">
-                        <option value="0">♾️ Vitalicia (De por vida)</option>
+                    <label>Duración de la Licencia</label>
+                    <select id="activate-duration">
                         <option value="1">1 Mes</option>
-                        <option value="3">3 Meses</option>
+                        <option value="3" selected>3 Meses</option>
                         <option value="6">6 Meses</option>
                         <option value="12">12 Meses (1 Año)</option>
+                        <option value="24">24 Meses (2 Años)</option>
+                        <option value="36">36 Meses (3 Años)</option>
                     </select>
-                </div>
-                <div class="form-group">
-                    <label>Clave (Opcional - o generar automáticamente)</label>
-                    <input type="text" id="custom-key" placeholder="SUBVOZ-XXXX-XXXX">
                 </div>
             </div>
             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                <button class="btn btn-primary" onclick="generateAutoKey()">✨ Generar Código Aleatorio</button>
-                <button class="btn btn-green" onclick="submitCreateKey()">🚀 Guardar y Crear Licencia</button>
+                <button class="btn btn-green" onclick="submitActivateDevice()">✅ Activar Licencia en este Equipo</button>
             </div>
 
             <div id="generated-box" class="generated-box">
-                <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">✅ LICENCIA CREADA EXITOSAMENTE:</div>
+                <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">✅ LICENCIA ACTIVADA EXITOSAMENTE:</div>
                 <div class="generated-key" id="gen-key-result"></div>
                 <div style="margin-top: 10px; display: flex; gap: 10px;">
-                    <button class="btn btn-outline" onclick="copyKeyText()">📋 Copiar Clave</button>
-                    <button class="btn btn-green" onclick="sendKeyWhatsApp()">📱 Enviar por WhatsApp</button>
+                    <button class="btn btn-green" onclick="sendActivationWhatsApp()">📱 Avisarle al Cliente por WhatsApp</button>
                 </div>
             </div>
         </div>
 
-        <!-- Lista de Licencias Existentes -->
+        <!-- Lista de Dispositivos Registrados -->
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <h2 style="margin-bottom: 0;"><span class="icon-badge">📋</span> Licencias Registradas en el Sistema</h2>
-                <button class="btn btn-outline" onclick="loadLicenses()">🔄 Actualizar Lista</button>
+                <h2 style="margin-bottom: 0;"><span class="icon-badge">📋</span> Dispositivos Registrados en el Sistema</h2>
+                <button class="btn btn-outline" onclick="loadDevices()">🔄 Actualizar Lista</button>
             </div>
             <div class="table-wrap">
                 <table>
                     <thead>
                         <tr>
-                            <th>Clave</th>
-                            <th>Tipo / Equipos</th>
-                            <th>Usados / Máx</th>
-                            <th>Última Actividad / Acceso</th>
+                            <th>ID de Equipo</th>
+                            <th>Plan / Estado</th>
+                            <th>Primer Registro / Últ. Actividad</th>
+                            <th>Vence</th>
                             <th>Cliente / Nota</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="licenses-table-body">
-                        <tr><td colspan="5" style="text-align: center; color: var(--muted);">Cargando licencias...</td></tr>
+                    <tbody id="devices-table-body">
+                        <tr><td colspan="6" style="text-align: center; color: var(--muted);">Cargando dispositivos...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -307,22 +298,6 @@
     <script>
         var currentToken = localStorage.getItem("admin_token") || "";
 
-        function onTypeChange() {
-            var val = document.getElementById("license-type").value;
-            document.getElementById("seats-group").style.display = (val === "custom") ? "flex" : "none";
-        }
-
-        function generateAutoKey() {
-            var chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-            function rnd(n) {
-                var res = "";
-                for (var i = 0; i < n; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
-                return res;
-            }
-            var key = "SUBVOZ-" + rnd(4) + "-" + rnd(4) + "-" + rnd(4);
-            document.getElementById("custom-key").value = key;
-        }
-
         async function doLogin() {
             var user = document.getElementById("admin-user").value.trim();
             var pass = document.getElementById("admin-pass").value.trim();
@@ -340,7 +315,7 @@
                     currentToken = data.token;
                     localStorage.setItem("admin_token", currentToken);
                     document.getElementById("login-overlay").style.display = "none";
-                    loadLicenses();
+                    loadDevices();
                 } else {
                     err.innerText = data.message || "Usuario o contraseña incorrectos";
                     err.style.display = "block";
@@ -372,14 +347,34 @@
             } catch(e) { return isoStr; }
         }
 
-        async function loadLicenses() {
+        var lastActivatedHwId = "";
+        var lastActivatedExpires = "";
+
+        function planBadgeClass(status) {
+            if (status === "active") return "badge-status-done";
+            if (status === "trial") return "badge-status-progress";
+            return "badge-status-open"; // expired / expired_trial
+        }
+
+        function planLabel(dev) {
+            if (dev.plan === "PAID") {
+                return dev.status === "expired"
+                    ? '<span class="badge badge-status-open">❌ Licencia Vencida</span>'
+                    : '<span class="badge badge-status-done">✅ Licencia Activa</span>';
+            }
+            return dev.status === "expired_trial"
+                ? '<span class="badge badge-status-open">⌛ Prueba Vencida</span>'
+                : '<span class="badge badge-status-progress">🎁 Prueba (' + (dev.days_remaining ?? 0) + 'd)</span>';
+        }
+
+        async function loadDevices() {
             if (!currentToken) {
                 document.getElementById("login-overlay").style.display = "flex";
                 return;
             }
 
             try {
-                var resp = await fetch("/admin/api/licenses?token=" + encodeURIComponent(currentToken));
+                var resp = await fetch("/admin/api/devices?token=" + encodeURIComponent(currentToken));
                 var data = await resp.json();
 
                 if (!data.success) {
@@ -388,124 +383,102 @@
                 }
 
                 document.getElementById("login-overlay").style.display = "none";
-                var tbody = document.getElementById("licenses-table-body");
+                var tbody = document.getElementById("devices-table-body");
                 tbody.innerHTML = "";
 
-                var keys = Object.keys(data.licenses || {});
-                if (keys.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--muted);">No hay licencias creadas aún.</td></tr>';
+                var ids = Object.keys(data.devices || {});
+                if (ids.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--muted);">Ningún equipo se ha registrado todavía.</td></tr>';
                     return;
                 }
 
-                keys.forEach(function(k) {
-                    var item = data.licenses[k];
-                    var registered = item.registered_devices || [];
-                    var seats = item.max_seats || 1;
-                    var isMulti = seats > 1;
-                    var createdAt = formatDate(item.created_at);
-                    var lastSeen = formatDate(item.last_activity || (registered.length > 0 ? registered[registered.length - 1].last_seen : null));
+                // Los más recientes primero
+                ids.sort(function(a, b) {
+                    return (data.devices[b].last_seen || "").localeCompare(data.devices[a].last_seen || "");
+                });
 
-                    var devDetails = registered.map(function(d) {
-                        return `<div style="font-size: 11px; color: var(--muted); margin-top: 2px;">
-                            💻 <strong>${d.hostname || 'PC'}</strong> (${d.mac || d.hw_id || 'ID'}) 
-                            <br>📅 Activado: ${formatDate(d.activated_at)} 
-                            <br>⏱️ Último Acceso: ${formatDate(d.last_seen || d.activated_at)}
-                        </div>`;
-                    }).join('<hr style="border-color: rgba(255,255,255,0.05); margin: 4px 0;">');
-
-                    if (!devDetails) devDetails = '<span style="font-size: 12px; color: var(--muted);">Pendiente por activar</span>';
-
-                    var durationText = item.duration_months && item.duration_months > 0 
-                        ? `<span style="color: #F59E0B; font-weight: 700;">⏳ ${item.duration_months} Mes(es)</span><br><span style="font-size: 11px; color: var(--muted);">Vence: ${formatDate(item.expires_at)}</span>`
-                        : `<span style="color: #34D399; font-weight: 700;">♾️ Vitalicia</span>`;
+                ids.forEach(function(hwId) {
+                    var dev = data.devices[hwId];
+                    var durationText = dev.duration_months
+                        ? `<div style="font-size: 11px; color: var(--muted); margin-top: 2px;">${dev.duration_months} mes(es)</div>`
+                        : "";
 
                     var tr = document.createElement("tr");
                     tr.innerHTML = `
-                        <td><strong style="font-family: monospace; color: #34D399; font-size: 15px;">${k}</strong></td>
-                        <td>
-                            <span class="badge ${isMulti ? 'badge-multi' : 'badge-single'}">${isMulti ? 'Multiusuario (' + seats + ')' : 'Monousuario (1)'}</span>
-                            <div style="font-size: 12px; font-weight: 700; margin-top: 4px;">${registered.length} / ${seats} activados</div>
-                            <div style="margin-top: 4px;">${durationText}</div>
-                        </td>
-                        <td><span style="font-size: 13px;">${createdAt}</span></td>
-                        <td><span style="font-size: 13px; color: #60A5FA; font-weight: 600;">${lastSeen}</span></td>
-                        <td style="max-width: 250px;">
-                            <div style="font-weight: 600; color: var(--text);">${item.note || '<em>Sin nota</em>'}</div>
-                            ${devDetails}
-                        </td>
-                        <td>
-                            <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="deleteKey('${k}')">🗑️ Eliminar</button>
+                        <td><strong style="font-family: monospace; color: #34D399; font-size: 14px;">${hwId}</strong><div style="font-size: 11px; color: var(--muted); margin-top: 2px;">💻 ${dev.hostname || 'PC desconocido'}</div></td>
+                        <td>${planLabel(dev)}${durationText}</td>
+                        <td><span style="font-size: 12px;">${formatDate(dev.first_seen)}</span><br><span style="font-size: 12px; color: #60A5FA; font-weight: 600;">${formatDate(dev.last_seen)}</span></td>
+                        <td><span style="font-size: 12px;">${dev.expires_at ? formatDate(dev.expires_at) : '<span style="color: var(--muted);">—</span>'}</span></td>
+                        <td style="max-width: 200px;"><div style="font-weight: 600; color: var(--text); font-size: 13px;">${dev.note || '<em style="color: var(--muted);">Sin nota</em>'}</div></td>
+                        <td style="white-space: nowrap;">
+                            <button class="btn btn-danger" style="padding: 6px 10px; font-size: 12px;" onclick="deleteDevice('${hwId}')">🗑️</button>
                         </td>
                     `;
                     tbody.appendChild(tr);
                 });
             } catch (e) {
-                console.error("Error al cargar licencias", e);
+                console.error("Error al cargar dispositivos", e);
             }
         }
 
-        async function submitCreateKey() {
-            var note = document.getElementById("client-note").value.trim();
-            var type = document.getElementById("license-type").value;
-            var seats = type === "custom" ? parseInt(document.getElementById("seats-num").value) || 1 : 1;
-            var months = parseInt(document.getElementById("license-duration").value) || 0;
-            var key = document.getElementById("custom-key").value.trim().toUpperCase();
+        async function submitActivateDevice() {
+            var hwId = document.getElementById("activate-hwid").value.trim().toUpperCase();
+            var note = document.getElementById("activate-note").value.trim();
+            var months = parseInt(document.getElementById("activate-duration").value) || 1;
 
-            if (!key) {
-                generateAutoKey();
-                key = document.getElementById("custom-key").value.trim().toUpperCase();
+            if (!hwId) {
+                alert("Pega el ID de equipo que te envió el cliente.");
+                return;
             }
 
             try {
-                var resp = await fetch("/admin/api/generate-key", {
+                var resp = await fetch("/admin/api/activate-device", {
                     method: "POST",
                     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                    body: "token=" + encodeURIComponent(currentToken) + "&key=" + encodeURIComponent(key) + "&seats=" + seats + "&months=" + months + "&note=" + encodeURIComponent(note)
+                    body: "token=" + encodeURIComponent(currentToken) + "&hw_id=" + encodeURIComponent(hwId) + "&months=" + months + "&note=" + encodeURIComponent(note)
                 });
                 var data = await resp.json();
                 if (data.success) {
-                    document.getElementById("gen-key-result").innerText = key;
+                    lastActivatedHwId = hwId;
+                    lastActivatedExpires = data.expires_at;
+                    document.getElementById("gen-key-result").innerText = hwId + " — activa hasta " + formatDate(data.expires_at).replace(/<[^>]+>/g, "");
                     document.getElementById("generated-box").style.display = "block";
-                    document.getElementById("client-note").value = "";
-                    document.getElementById("custom-key").value = "";
-                    loadLicenses();
+                    document.getElementById("activate-hwid").value = "";
+                    document.getElementById("activate-note").value = "";
+                    loadDevices();
                 } else {
-                    alert("Error: " + (data.message || "No se pudo crear la clave"));
+                    alert("Error: " + (data.message || "No se pudo activar el dispositivo"));
                 }
             } catch (e) {
                 alert("Error al enviar la solicitud al servidor");
             }
         }
 
-        async function deleteKey(key) {
-            if (!confirm("¿Seguro que deseas eliminar la licencia " + key + "? Dispositivos activados perderán acceso.")) return;
+        async function deleteDevice(hwId) {
+            if (!confirm("¿Eliminar el registro del equipo " + hwId + "? Si vuelve a abrir la app se registrará de nuevo como prueba gratuita.")) return;
 
             try {
-                var resp = await fetch("/admin/api/delete-key", {
+                var resp = await fetch("/admin/api/delete-device", {
                     method: "POST",
                     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                    body: "token=" + encodeURIComponent(currentToken) + "&key=" + encodeURIComponent(key)
+                    body: "token=" + encodeURIComponent(currentToken) + "&hw_id=" + encodeURIComponent(hwId)
                 });
                 var data = await resp.json();
                 if (data.success) {
-                    loadLicenses();
+                    loadDevices();
                 } else {
-                    alert("Error al eliminar la clave");
+                    alert("Error al eliminar el dispositivo");
                 }
             } catch (e) {
                 alert("Error de conexión al eliminar");
             }
         }
 
-        function copyKeyText() {
-            var k = document.getElementById("gen-key-result").innerText;
-            navigator.clipboard.writeText(k);
-            alert("¡Clave copiada al portapapeles: " + k + "!");
-        }
-
-        function sendKeyWhatsApp() {
-            var k = document.getElementById("gen-key-result").innerText;
-            var msg = "¡Hola! Tu clave de activación de ⭐ SubVoz Pro es: " + k + "\n\nAbre SubVoz Pro, ingresa esta clave y disfruta de tu licencia de por vida. ¡Gracias por tu compra!";
+        function sendActivationWhatsApp() {
+            var expiresFmt = lastActivatedExpires ? new Date(lastActivatedExpires).toLocaleDateString('es-CO') : "";
+            var msg = "¡Hola! Ya activamos tu licencia de ⭐ SubVoz Pro en tu equipo (ID: " + lastActivatedHwId + ")" +
+                (expiresFmt ? ", válida hasta el " + expiresFmt + "." : ".") +
+                "\n\nAbre la app y presiona 'Verificar Licencia de Nuevo' en la pestaña de Licencia. ¡Gracias por tu compra!";
             window.open("https://wa.me/?text=" + encodeURIComponent(msg), "_blank");
         }
 
@@ -539,7 +512,7 @@
                         <td><strong style="color: #F8FAFC;">${t.subject || 'Sin Asunto'}</strong><br><span class="badge badge-single" style="font-size: 10px;">${t.category || 'Soporte'}</span></td>
                         <td style="max-width: 220px;">
                             <div style="font-size: 13px; font-weight: 700; color: #34D399;">👤 ${t.contact_info || 'Sin Contacto'}</div>
-                            <div style="font-size: 11px; color: #F59E0B; margin-top: 2px;">🔑 Clave: <strong>${t.license_key || 'Prueba Gratis'}</strong></div>
+                            <div style="font-size: 11px; color: #F59E0B; margin-top: 2px;">📋 Plan: <strong>${t.license_key || 'Prueba Gratis'}</strong></div>
                             <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">💻 ${t.hostname || 'PC'} (<code>${t.mac || t.hw_id || ''}</code>)</div>
                         </td>
                         <td style="max-width: 260px;">
