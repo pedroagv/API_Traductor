@@ -32,7 +32,7 @@ def load_db() -> dict:
         },
         "updates": {
             "latest_version": "1.0.0",
-            "download_url": "https://github.com/pedroagv/API_Traductor/releases/latest",
+            "download_url": "https://github.com/pedroagv/API_Traductor/releases/download/v1.0.0/SubVozPro_Portable.zip",
             "release_notes": "Versión 1.0.0 inicial con soporte multidioma y cambio de modelos.",
         },
     }
@@ -182,8 +182,8 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                     while chunk := f.read(65536):
                         self.wfile.write(chunk)
             else:
-                # Redirigir por defecto a los releases de GitHub
-                default_rel = "https://github.com/pedroagv/API_Traductor/releases/latest"
+                # Redirigir por defecto al binario de los releases de GitHub
+                default_rel = "https://github.com/pedroagv/API_Traductor/releases/download/v1.0.0/SubVozPro_Portable.zip"
                 self.send_response(302)
                 self.send_header("Location", default_rel)
                 self.end_headers()
