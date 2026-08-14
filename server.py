@@ -142,6 +142,35 @@ def save_db_supabase(data: dict):
         print(f"Error en save_db_supabase: {exc}")
 
 
+def init_supabase_check():
+    print("=" * 60)
+    print("[SUPABASE CHECK] Verificando tablas en la nube Supabase...")
+    tables = ["devices", "tickets", "app_config"]
+    missing = []
+    for t in tables:
+        res = supabase_request(f"{t}?select=*&limit=1")
+        if res is not None:
+            print(f"  [OK] Tabla '{t}' detectada y lista.")
+        else:
+            missing.append(t)
+            print(f"  [MISSING] Tabla '{t}' NO EXISTE en el esquema.")
+
+    if missing:
+        print("[SUPABASE WARN] Las siguientes tablas faltan en Supabase:")
+        for m in missing:
+            print(f"   - {m}")
+        print("[INSTRUCCION] Ejecute 'supabase_schema.sql' en el SQL Editor de Supabase.")
+        print("[FALLBACK] El servidor operara en modo seguro usando 'licenses.json' local.")
+    else:
+        print("[SUPABASE OK] Sincronizacion en la nube 100% activa y operativa.")
+    print("=" * 60)
+
+try:
+    init_supabase_check()
+except Exception as exc:
+    print(f"Error durante diagnóstico inicial de Supabase: {exc}")
+
+
 def load_db() -> dict:
     sb_data = load_db_supabase()
     if sb_data is not None:
