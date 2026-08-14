@@ -8,12 +8,16 @@ import urllib.parse
 
 PORT = int(os.environ.get("PORT", 8000))
 DATA_FILE = os.path.join(os.path.dirname(__file__), "licenses.json")
+TRIAL_DAYS = 30
+
 
 def load_db() -> dict:
     if os.path.exists(DATA_FILE):
         try:
             with open(DATA_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                data.setdefault("devices", {})
+                return data
         except Exception:
             pass
     initial = {
@@ -21,20 +25,10 @@ def load_db() -> dict:
             "user": "laconcha",
             "pass": "quelapario"
         },
-        "licenses": {
-            "DEMO-SINGLE-KEY": {
-                "max_seats": 1,
-                "registered_devices": [],
-                "created_at": datetime.datetime.now().isoformat(),
-                "note": "Clave demo monousuario",
-            },
-            "EMPRESA-5SEATS-KEY": {
-                "max_seats": 5,
-                "registered_devices": [],
-                "created_at": datetime.datetime.now().isoformat(),
-                "note": "Clave multiusuario 5 licencias",
-            },
-        },
+        # Cada equipo se registra solo (por su ID de hardware, no por una clave que se
+        # pueda copiar/compartir) la primera vez que abre la app, siempre como plan FREE
+        # (prueba de 30 días). Un admin lo pasa a plan PAID desde /admin tras validar el pago.
+        "devices": {},
         "updates": {
             "latest_version": "1.0.0",
             "download_url": "https://github.com/pedroagv/API_Traductor/releases/latest/download/SubVozPro_Portable.zip",
@@ -43,6 +37,48 @@ def load_db() -> dict:
     }
     save_db(initial)
     return initial
+
+
+def evaluate_device(dev: dict) -> dict:
+    """Determina si un dispositivo puede ejecutar la app en este momento, según su plan."""
+    now = datetime.datetime.now()
+    plan = dev.get("plan", "FREE")
+
+    if plan == "PAID":
+        expires_at_str = dev.get("expires_at")
+        if expires_at_str:
+            exp_dt = datetime.datetime.fromisoformat(expires_at_str)
+            if now > exp_dt:
+                return {
+                    "can_run": False, "status": "expired",
+                    "message": f"Tu licencia venció el {exp_dt.strftime('%d/%m/%Y')}. Contacta a ventas para renovarla.",
+                    "days_remaining": 0,
+                }
+            return {
+                "can_run": True, "status": "active",
+                "message": f"Licencia activa hasta el {exp_dt.strftime('%d/%m/%Y')}.",
+                "days_remaining": (exp_dt - now).days,
+            }
+        return {"can_run": True, "status": "active", "message": "Licencia activa (vitalicia).", "days_remaining": 999999}
+
+    # plan FREE: prueba de 30 días contada desde el primer registro en el servidor.
+    first_seen_str = dev.get("first_seen") or now.isoformat()
+    first_seen = datetime.datetime.fromisoformat(first_seen_str)
+    elapsed = (now - first_seen).days
+    remaining = max(0, TRIAL_DAYS - elapsed)
+
+    if remaining > 0:
+        return {
+            "can_run": True, "status": "trial",
+            "message": f"Prueba gratuita: {remaining} día(s) restantes.",
+            "days_remaining": remaining,
+        }
+
+    return {
+        "can_run": False, "status": "expired_trial",
+        "message": "Tu período de prueba de 30 días terminó. Contacta a ventas para activar tu licencia.",
+        "days_remaining": 0,
+    }
 
 
 def save_db(data: dict):
@@ -76,130 +112,143 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
-        if self.path == "/verify-license":
+        if self.path == "/register-device":
             content_len = int(self.headers.get("Content-Length", 0))
             post_body = self.rfile.read(content_len).decode("utf-8")
-
             parsed = urllib.parse.parse_qs(post_body)
-            key = parsed.get("key", [""])[0].strip().upper()
+
             hw_id = parsed.get("hw_id", [""])[0].strip()
-            mac = parsed.get("mac", [""])[0].strip()
             hostname = parsed.get("hostname", [""])[0].strip()
 
-            db = load_db()
-            licenses = db.get("licenses", {})
-
-            if key not in licenses:
+            if not hw_id:
                 self._set_headers(400)
-                self.wfile.write(json.dumps({"success": False, "message": "Clave de licencia no encontrada."}).encode())
+                self.wfile.write(json.dumps({"success": False, "can_run": False, "message": "Falta el ID del equipo."}).encode())
                 return
 
-            lic_data = licenses[key]
-            max_seats = lic_data.get("max_seats", 1)
-            registered = lic_data.get("registered_devices", [])
-            expires_at_str = lic_data.get("expires_at")
-
-            # Comprobar expiración por tiempo (meses)
-            if expires_at_str:
-                try:
-                    exp_dt = datetime.datetime.fromisoformat(expires_at_str)
-                    if datetime.datetime.now() > exp_dt:
-                        self._set_headers(403)
-                        self.wfile.write(json.dumps({
-                            "success": False,
-                            "message": f"La licencia de esta clave ha expirado el {exp_dt.strftime('%d/%m/%Y')}.",
-                            "expired": True,
-                        }).encode())
-                        return
-                except Exception:
-                    pass
-
-            # Comprobar si este dispositivo (MAC o HWID) ya está registrado
-            device_match = next((d for d in registered if d.get("mac") == mac or d.get("hw_id") == hw_id), None)
+            db = load_db()
+            devices = db.setdefault("devices", {})
             now_iso = datetime.datetime.now().isoformat()
 
-            if device_match:
-                device_match["last_seen"] = now_iso
-                lic_data["last_activity"] = now_iso
-                save_db(db)
-
-                self._set_headers(200)
-                self.wfile.write(json.dumps({
-                    "success": True,
-                    "message": "Dispositivo autorizado.",
-                    "seats_used": len(registered),
-                    "max_seats": max_seats,
-                    "expires_at": expires_at_str,
-                }).encode())
-                return
-
-            if len(registered) >= max_seats:
-                self._set_headers(403)
-                self.wfile.write(json.dumps({
-                    "success": False,
-                    "message": f"Límite de licencias alcanzado ({len(registered)}/{max_seats} equipos activados).",
-                }).encode())
-                return
-
-            new_device = {
-                "hw_id": hw_id,
-                "mac": mac,
-                "hostname": hostname,
-                "activated_at": now_iso,
-                "last_seen": now_iso,
-            }
-            registered.append(new_device)
-            lic_data["registered_devices"] = registered
-            lic_data["last_activity"] = now_iso
+            dev = devices.get(hw_id)
+            if dev is None:
+                dev = {
+                    "plan": "FREE",
+                    "hostname": hostname,
+                    "note": "",
+                    "first_seen": now_iso,
+                    "last_seen": now_iso,
+                    "activated_at": None,
+                    "duration_months": 0,
+                    "expires_at": None,
+                }
+                devices[hw_id] = dev
+            else:
+                dev["last_seen"] = now_iso
+                if hostname:
+                    dev["hostname"] = hostname
             save_db(db)
 
+            evaluation = evaluate_device(dev)
             self._set_headers(200)
             self.wfile.write(json.dumps({
                 "success": True,
-                "message": f"¡Licencia activada con éxito en este equipo! ({len(registered)}/{max_seats} licencias usadas)",
-                "seats_used": len(registered),
-                "max_seats": max_seats,
-                "expires_at": expires_at_str,
+                "hw_id": hw_id,
+                "plan": dev.get("plan", "FREE"),
+                "expires_at": dev.get("expires_at"),
+                **evaluation,
             }).encode())
 
-        elif self.path == "/generate-key" or self.path == "/admin/api/generate-key":
+        elif self.path == "/admin/api/activate-device":
             content_len = int(self.headers.get("Content-Length", 0))
             post_body = self.rfile.read(content_len).decode("utf-8")
             parsed = urllib.parse.parse_qs(post_body)
-            
-            token = parsed.get("token", [""])[0]
-            key = parsed.get("key", [""])[0].strip().upper()
-            seats = int(parsed.get("seats", [1])[0])
-            note = parsed.get("note", [""])[0]
-            months = int(parsed.get("months", [0])[0])
 
-            if self.path == "/admin/api/generate-key" and not check_auth_token(token):
+            token = parsed.get("token", [""])[0]
+            hw_id = parsed.get("hw_id", [""])[0].strip()
+            months = int(parsed.get("months", [1])[0] or 1)
+            note = parsed.get("note", [""])[0]
+
+            if not check_auth_token(token):
                 self._set_headers(401)
                 self.wfile.write(json.dumps({"success": False, "message": "No autorizado"}).encode())
                 return
 
-            if not key:
+            if not hw_id:
                 self._set_headers(400)
-                self.wfile.write(json.dumps({"success": False, "message": "Falta parametro key"}).encode())
+                self.wfile.write(json.dumps({"success": False, "message": "Falta el ID del equipo"}).encode())
                 return
 
-            expires_at = None
-            if months > 0:
-                expires_at = (datetime.datetime.now() + datetime.timedelta(days=30 * months)).isoformat()
-
             db = load_db()
-            db["licenses"][key] = {
-                "max_seats": seats,
-                "registered_devices": [],
-                "created_at": datetime.datetime.now().isoformat(),
-                "duration_months": months,
-                "expires_at": expires_at,
-                "note": note,
-            }
+            devices = db.setdefault("devices", {})
+            now = datetime.datetime.now()
+            dev = devices.get(hw_id)
+            if dev is None:
+                dev = {
+                    "plan": "FREE", "hostname": "", "note": "",
+                    "first_seen": now.isoformat(), "last_seen": now.isoformat(),
+                    "activated_at": None, "duration_months": 0, "expires_at": None,
+                }
+                devices[hw_id] = dev
+
+            dev["plan"] = "PAID"
+            dev["activated_at"] = now.isoformat()
+            dev["duration_months"] = months
+            dev["expires_at"] = (now + datetime.timedelta(days=30 * months)).isoformat()
+            if note:
+                dev["note"] = note
             save_db(db)
 
             self._set_headers(200)
-            self.wfile.write(json.dumps({"success": True, "key": key, "seats": seats, "expires_at": expires_at, "note": note}).encode())
+            self.wfile.write(json.dumps({"success": True, "hw_id": hw_id, "expires_at": dev["expires_at"]}).encode())
+
+        elif self.path == "/admin/api/deactivate-device":
+            content_len = int(self.headers.get("Content-Length", 0))
+            post_body = self.rfile.read(content_len).decode("utf-8")
+            parsed = urllib.parse.parse_qs(post_body)
+            token = parsed.get("token", [""])[0]
+            hw_id = parsed.get("hw_id", [""])[0].strip()
+
+            if not check_auth_token(token):
+                self._set_headers(401)
+                self.wfile.write(json.dumps({"success": False, "message": "No autorizado"}).encode())
+                return
+
+            db = load_db()
+            dev = db.get("devices", {}).get(hw_id)
+            if not dev:
+                self._set_headers(404)
+                self.wfile.write(json.dumps({"success": False, "message": "Dispositivo no encontrado"}).encode())
+                return
+
+            dev["plan"] = "FREE"
+            dev["activated_at"] = None
+            dev["duration_months"] = 0
+            dev["expires_at"] = None
+            save_db(db)
+            self._set_headers(200)
+            self.wfile.write(json.dumps({"success": True, "message": "Dispositivo regresado a plan FREE"}).encode())
+
+        elif self.path == "/admin/api/delete-device":
+            content_len = int(self.headers.get("Content-Length", 0))
+            post_body = self.rfile.read(content_len).decode("utf-8")
+            parsed = urllib.parse.parse_qs(post_body)
+            token = parsed.get("token", [""])[0]
+            hw_id = parsed.get("hw_id", [""])[0].strip()
+
+            if not check_auth_token(token):
+                self._set_headers(401)
+                self.wfile.write(json.dumps({"success": False, "message": "No autorizado"}).encode())
+                return
+
+            db = load_db()
+            if hw_id in db.get("devices", {}):
+                del db["devices"][hw_id]
+                save_db(db)
+                self._set_headers(200)
+                self.wfile.write(json.dumps({"success": True, "message": f"Dispositivo {hw_id} eliminado"}).encode())
+            else:
+                self._set_headers(404)
+                self.wfile.write(json.dumps({"success": False, "message": "Dispositivo no encontrado"}).encode())
 
         elif self.path == "/admin/api/login":
             content_len = int(self.headers.get("Content-Length", 0))
@@ -242,28 +291,6 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
             new_token = get_admin_token(new_user, new_pass)
             self._set_headers(200)
             self.wfile.write(json.dumps({"success": True, "message": "Credenciales actualizadas exitosamente", "token": new_token}).encode())
-
-        elif self.path == "/admin/api/delete-key":
-            content_len = int(self.headers.get("Content-Length", 0))
-            post_body = self.rfile.read(content_len).decode("utf-8")
-            parsed = urllib.parse.parse_qs(post_body)
-            token = parsed.get("token", [""])[0]
-            key = parsed.get("key", [""])[0].strip().upper()
-
-            if not check_auth_token(token):
-                self._set_headers(401)
-                self.wfile.write(json.dumps({"success": False, "message": "No autorizado"}).encode())
-                return
-
-            db = load_db()
-            if key in db.get("licenses", {}):
-                del db["licenses"][key]
-                save_db(db)
-                self._set_headers(200)
-                self.wfile.write(json.dumps({"success": True, "message": f"Licencia {key} eliminada"}).encode())
-            else:
-                self._set_headers(404)
-                self.wfile.write(json.dumps({"success": False, "message": "Clave no encontrada"}).encode())
 
         elif self.path == "/submit-ticket":
             content_len = int(self.headers.get("Content-Length", 0))
@@ -404,7 +431,7 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
             self._set_headers(200)
             self.wfile.write(json.dumps({"success": True, "tickets": user_tickets}).encode())
 
-        elif path == "/admin/api/licenses":
+        elif path == "/admin/api/devices":
             token = query.get("token", [""])[0]
             if not check_auth_token(token):
                 self._set_headers(401)
@@ -412,8 +439,13 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                 return
 
             db = load_db()
+            devices = db.get("devices", {})
+            enriched = {}
+            for hw_id, dev in devices.items():
+                enriched[hw_id] = {**dev, **evaluate_device(dev)}
+
             self._set_headers(200)
-            self.wfile.write(json.dumps({"success": True, "licenses": db.get("licenses", {})}).encode())
+            self.wfile.write(json.dumps({"success": True, "devices": enriched}).encode())
 
         elif path == "/admin/api/tickets":
             token = query.get("token", [""])[0]
