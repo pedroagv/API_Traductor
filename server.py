@@ -156,9 +156,22 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                 "html_url": updates.get("download_url", ""),
                 "notes": updates.get("release_notes", ""),
             }).encode())
-        else:
+        elif self.path == "/api-status":
             self._set_headers(200)
             self.wfile.write(json.dumps({"status": "Reunion Pro License API Running"}).encode())
+        else:
+            # Servir la Landing Page HTML
+            landing_path = os.path.join(os.path.dirname(__file__), "landing.html")
+            if os.path.exists(landing_path):
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                with open(landing_path, "rb") as f:
+                    self.wfile.write(f.read())
+            else:
+                self._set_headers(200)
+                self.wfile.write(json.dumps({"status": "Reunion Pro License API Running"}).encode())
 
 
 def run_server():

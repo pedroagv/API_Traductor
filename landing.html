@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reunion Pro - Traducción y Subtítulos de Voz en Vivo</title>
+    <meta name="description" content="Software de traducción de voz en tiempo real para reuniones, clases y videos. 100% Portable, multidioma (EN, ES, FR, DE, IT, PT) y 2 meses gratis.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #0B0F19;
+            --bg-card: #111827;
+            --bg-card-hover: #1F2937;
+            --border: #1E293B;
+            --accent-blue: #3B82F6;
+            --accent-purple: #8B5CF6;
+            --accent-green: #10B981;
+            --accent-gold: #F59E0B;
+            --text-main: #F8FAFC;
+            --text-muted: #94A3B8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Glow Backgrounds */
+        .glow-top {
+            position: absolute;
+            top: -150px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 700px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, rgba(139, 92, 246, 0.15) 50%, rgba(0,0,0,0) 80%);
+            filter: blur(80px);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Navbar */
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 24px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .brand {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-badge {
+            font-size: 11px;
+            font-weight: 700;
+            background: rgba(59, 130, 246, 0.15);
+            color: #60A5FA;
+            padding: 2px 8px;
+            border-radius: 20px;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            -webkit-text-fill-color: initial;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 15px;
+            text-decoration: none;
+            transition: all 0.25s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+            color: #FFFFFF;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(139, 92, 246, 0.5);
+        }
+
+        .btn-whatsapp {
+            background: #10B981;
+            color: #000000;
+            font-weight: 700;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-whatsapp:hover {
+            background: #059669;
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(16, 185, 129, 0.5);
+        }
+
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #475569;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 80px 0 60px;
+            text-align: center;
+        }
+
+        .tag-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 30px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34D399;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        .hero h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 54px;
+            font-weight: 800;
+            line-height: 1.15;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, #60A5FA 0%, #A78BFA 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 19px;
+            color: var(--text-muted);
+            max-width: 760px;
+            margin: 0 auto 36px;
+            font-weight: 400;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 60px;
+        }
+
+        /* Interactive Demo Box */
+        .demo-window {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            max-width: 860px;
+            margin: 0 auto;
+            overflow: hidden;
+            text-align: left;
+        }
+
+        .demo-header {
+            background: #1E293B;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .demo-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: #EF4444; }
+        .dot-yellow { background: #F59E0B; }
+        .dot-green { background: #10B981; }
+
+        .demo-title {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .demo-body {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .subtitle-box {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .lang-tag {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            display: inline-block;
+        }
+
+        .lang-orig { color: #94A3B8; }
+        .lang-trans { color: #60A5FA; }
+
+        .subtitle-text {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        /* Features Section */
+        .section-title {
+            text-align: center;
+            margin: 100px 0 60px;
+        }
+
+        .section-title h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 38px;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .section-title p {
+            color: var(--text-muted);
+            font-size: 17px;
+        }
+
+        .grid-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 32px;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            background: var(--bg-card-hover);
+            transform: translateY(-5px);
+            border-color: rgba(59, 130, 246, 0.4);
+        }
+
+        .feature-icon {
+            font-size: 36px;
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+
+        .feature-card h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        /* Models Section */
+        .models-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-top: 40px;
+        }
+
+        .model-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 14px;
+            text-align: center;
+            position: relative;
+        }
+
+        .model-card.popular {
+            border-color: #8B5CF6;
+            background: linear-gradient(180deg, rgba(139, 92, 246, 0.15) 0%, var(--bg-card) 100%);
+        }
+
+        .popular-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #8B5CF6;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 20px;
+        }
+
+        .model-card h4 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .model-card p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* Pricing & Social Impact Section */
+        .pricing-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .price-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .price-card.featured {
+            border-color: #3B82F6;
+            box-shadow: 0 10px 40px rgba(59, 130, 246, 0.2);
+        }
+
+        .price-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .price-num {
+            font-family: 'Outfit', sans-serif;
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin: 16px 0;
+        }
+
+        .price-num span {
+            font-size: 16px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .price-list {
+            list-style: none;
+            margin: 24px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .price-list li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            color: var(--text-muted);
+        }
+
+        .price-list li strong {
+            color: var(--text-main);
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            margin-top: 120px;
+            padding: 40px 0;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 38px; }
+            .hero p { font-size: 16px; }
+            .nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="glow-top"></div>
+
+    <div class="container">
+        <!-- Navbar -->
+        <nav>
+            <div class="brand">
+                Reunion Pro <span class="brand-badge">v1.0</span>
+            </div>
+            <div class="nav-links">
+                <a href="#caracteristicas" class="btn btn-outline" style="padding: 8px 16px; font-size: 14px;">Características</a>
+                <a href="#modelos" class="btn btn-outline" style="padding: 8px 16px; font-size: 14px;">Modelos</a>
+                <a href="#precios" class="btn btn-outline" style="padding: 8px 16px; font-size: 14px;">Precios</a>
+                <a href="https://wa.me/573008443272?text=Hola%20Pedro!%20Deseo%20informaci%C3%B3n%20sobre%20Reunion%20Pro" target="_blank" class="btn btn-whatsapp" style="padding: 8px 16px; font-size: 14px;">💬 WhatsApp</a>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="tag-pill">
+                ✨ 2 Meses Gratis de Prueba Completa | 100% Portable
+            </div>
+            <h1>Traducción y Subtítulos de Voz <span>en Tiempo Real</span></h1>
+            <p>
+                Traducción automática flotante para Zoom, Google Meet, YouTube y clases virtuales. 
+                Sin suscripciones costosas, 100% local en tu equipo y sin compartir tu audio con la nube.
+            </p>
+
+            <div class="hero-buttons">
+                <a href="https://github.com/pedroagv/API_Traductor/releases/latest" class="btn btn-primary">
+                    📥 Descargar Reunion Pro (Portable)
+                </a>
+                <a href="https://wa.me/573008443272?text=¡Hola%20Pedro!%20Deseo%20activar%20mi%20producto%20Reunion%20Pro" target="_blank" class="btn btn-whatsapp">
+                    📱 Contactar por WhatsApp (+57 3008443272)
+                </a>
+            </div>
+
+            <!-- Demo Window Preview -->
+            <div class="demo-window">
+                <div class="demo-header">
+                    <div class="demo-dot dot-red"></div>
+                    <div class="demo-dot dot-yellow"></div>
+                    <div class="demo-dot dot-green"></div>
+                    <span class="demo-title">Reunion Pro - Subtítulos Flotantes en Vivo</span>
+                </div>
+                <div class="demo-body">
+                    <div class="subtitle-box">
+                        <span class="lang-tag lang-orig">🎙️ VOZ ENTRANTE (INGLÉS)</span>
+                        <div class="subtitle-text">"Welcome everyone to today's software engineering and architecture session."</div>
+                    </div>
+                    <div class="subtitle-box" style="border-color: rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.08);">
+                        <span class="lang-tag lang-trans">💬 SUBTÍTULO (ESPAÑOL)</span>
+                        <div class="subtitle-text" style="color: #60A5FA; font-weight: 600;">"Bienvenidos todos a la sesión de hoy sobre ingeniería de software y arquitectura."</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Grid -->
+        <section id="caracteristicas">
+            <div class="section-title">
+                <h2>Diseñado para Rendimiento y Privacidad</h2>
+                <p>Todo lo que necesitas para entender cualquier idioma sin esfuerzo</p>
+            </div>
+
+            <div class="grid-features">
+                <div class="feature-card">
+                    <span class="feature-icon">⚡</span>
+                    <h3>Velocidad en Tiempo Real</h3>
+                    <p>Procesamiento directo de audio acelerado por GPU o CPU. Los subtítulos aparecen mientras la otra persona está hablando.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🌐</span>
+                    <h3>6 Idiomas Soportados</h3>
+                    <p>Traduce instantáneamente entre 🇺🇸 Inglés, 🇪🇸 Español, 🇫🇷 Francés, 🇩🇪 Alemán, 🇮🇹 Italiano y 🇵🇹 Portugués.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📦</span>
+                    <h3>100% Portable (Sin Instalación)</h3>
+                    <p>No requiere instalación ni permisos de administrador. Cópialo en una carpeta o USB y ejecútalo en cualquier PC.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📌</span>
+                    <h3>Ventana Flotante Siempre Visible</h3>
+                    <p>Mantén los subtítulos superpuestos encima de tus llamadas de Zoom, Google Meet, videos de YouTube o juegos.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🔒</span>
+                    <h3>Privacidad Privada 100%</h3>
+                    <p>Tu voz se procesa localmente en tu propia máquina. Ningún audio ni conversación se envía a servidores de terceros.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">⌨️</span>
+                    <h3>Escritura en Caliente</h3>
+                    <p>Incluye panel para escribir texto manualmente y obtener traducciones instantáneas al vuelo con opción de copiar.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Models Selection Section -->
+        <section id="modelos">
+            <div class="section-title">
+                <h2>Adapta el Motor a la Potencia de tu PC</h2>
+                <p>Elige el modelo adecuado según los recursos de tu computadora</p>
+            </div>
+
+            <div class="models-grid">
+                <div class="model-card">
+                    <h4>⚡ tiny</h4>
+                    <p><strong>Ultraligero</strong> (&lt;1 GB RAM)</p>
+                    <p style="margin-top: 8px;">Velocidad instantánea para laptops antiguas.</p>
+                </div>
+                <div class="model-card">
+                    <h4>⚡ base</h4>
+                    <p><strong>Liviano</strong> (~1.5 GB RAM)</p>
+                    <p style="margin-top: 8px;">Muy rápido para conversaciones generales.</p>
+                </div>
+                <div class="model-card popular">
+                    <span class="popular-badge">RECOMENDADO</span>
+                    <h4>⚖️ small</h4>
+                    <p><strong>Equilibrado</strong> (~2 GB RAM)</p>
+                    <p style="margin-top: 8px;">La mejor combinación de precisión y fluidez.</p>
+                </div>
+                <div class="model-card">
+                    <h4>🎯 medium</h4>
+                    <p><strong>Alta Precisión</strong> (~5 GB RAM)</p>
+                    <p style="margin-top: 8px;">Fidelidad en acentos complejos y terminología.</p>
+                </div>
+                <div class="model-card">
+                    <h4>👑 large-v3</h4>
+                    <p><strong>Máxima Calidad</strong> (GPU 6GB+ VRAM)</p>
+                    <p style="margin-top: 8px;">Calidad profesional superior del mercado.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing & Social Impact Section -->
+        <section id="precios">
+            <div class="section-title">
+                <h2>Precios Justos y Apoyo Comunitario</h2>
+                <p>Acceso libre para todos y licenciamiento accesible por Nequi</p>
+            </div>
+
+            <div class="pricing-container">
+                <!-- Card Trial -->
+                <div class="price-card">
+                    <div>
+                        <div class="price-title">🎁 Prueba Completa</div>
+                        <p style="color: var(--text-muted);">Prueba todas las funciones sin restricciones</p>
+                        <div class="price-num">$0 <span>/ 2 meses</span></div>
+                        <ul class="price-list">
+                            <li>✅ <strong>60 días gratis</strong> de uso ilimitado</li>
+                            <li>✅ Acceso a los 6 idiomas y 5 modelos</li>
+                            <li>✅ Sin registro ni tarjeta de crédito</li>
+                        </ul>
+                    </div>
+                    <a href="https://github.com/pedroagv/API_Traductor/releases/latest" class="btn btn-outline" style="width: 100%; justify-content: center; margin-top: 20px;">
+                        Descargar Gratis (2 Meses)
+                    </a>
+                </div>
+
+                <!-- Card Nequi -->
+                <div class="price-card featured">
+                    <div>
+                        <div class="price-title">⚡ Licencia Vitalicia</div>
+                        <p style="color: #60A5FA;">Pago único sin mensualidades</p>
+                        <div class="price-num">$30.000 <span>COP / pago único</span></div>
+                        <ul class="price-list">
+                            <li>✅ <strong>Licencia de por vida</strong> para tu equipo</li>
+                            <li>✅ Actualizaciones futuras incluidas</li>
+                            <li>✅ Pago rápido por <strong>Nequi</strong></li>
+                            <li>✅ Para que el creador coma algo rico 🍔☕</li>
+                        </ul>
+                    </div>
+                    <a href="https://wa.me/573008443272?text=¡Hola%20Pedro!%20Deseo%20adquirir%20mi%20licencia%20de%20Reunion%20Pro%20por%20Nequi" target="_blank" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 20px;">
+                        Comprar por Nequi ($30.000 COP)
+                    </a>
+                </div>
+
+                <!-- Card Social Beca -->
+                <div class="price-card">
+                    <div>
+                        <div class="price-title">❤️ Licencia Social / Beca</div>
+                        <p style="color: #F59E0B;">Primero ayudar a las personas</p>
+                        <div class="price-num">GRATIS <span>/ si lo necesitas</span></div>
+                        <ul class="price-list">
+                            <li>✅ Para estudiantes o personas vulnerables</li>
+                            <li>✅ Escríbenos tu historia por WhatsApp</li>
+                            <li>✅ Con gusto te regalamos la clave</li>
+                        </ul>
+                    </div>
+                    <a href="https://wa.me/573008443272?text=¡Hola%20Pedro!%20Te%20escribo%20para%20contarte%20mi%20historia%20y%20solicitar%20una%20licencia%20becada%20de%20Reunion%20Pro" target="_blank" class="btn btn-whatsapp" style="width: 100%; justify-content: center; margin-top: 20px;">
+                        Solicitar Licencia Social
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <p>© 2026 Reunion Pro. Desarrollado con tecnología de procesamiento local para privacidad total.</p>
+            <p style="margin-top: 6px; font-size: 13px;">Soporte y Ventas por WhatsApp: <strong>+57 3008443272</strong></p>
+        </footer>
+    </div>
+
+</body>
+</html>
