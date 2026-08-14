@@ -8,7 +8,7 @@ import urllib.parse
 
 PORT = int(os.environ.get("PORT", 8000))
 DATA_FILE = os.path.join(os.path.dirname(__file__), "licenses.json")
-TRIAL_DAYS = 30
+TRIAL_DAYS = 60
 
 
 def load_db() -> dict:
