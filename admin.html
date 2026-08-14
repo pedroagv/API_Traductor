@@ -70,11 +70,11 @@
             <p style="color: var(--muted); font-size: 13px; text-align: center; margin-bottom: 24px;">⭐ SubVoz Pro - Licenciamiento</p>
             <div class="form-group" style="margin-bottom: 16px;">
                 <label>Usuario</label>
-                <input type="text" id="admin-user" placeholder="pedroadmin" value="pedroadmin">
+                <input type="text" id="admin-user" placeholder="laconcha" value="laconcha">
             </div>
             <div class="form-group" style="margin-bottom: 24px;">
                 <label>Contraseña</label>
-                <input type="password" id="admin-pass" placeholder="••••••••">
+                <input type="password" id="admin-pass" placeholder="quelapario" value="quelapario">
             </div>
             <button class="btn btn-primary" onclick="doLogin()" style="width: 100%; justify-content: center;">Ingresar al Panel</button>
             <div id="login-error" style="color: var(--red); font-size: 13px; text-align: center; margin-top: 12px; display: none;"></div>
@@ -85,11 +85,30 @@
     <div class="container">
         <header>
             <div class="brand">⭐ SubVoz Pro - Admin Panel</div>
-            <div>
-                <span id="session-user-display" style="font-size: 13px; color: var(--muted); margin-right: 12px;"></span>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="btn btn-outline" onclick="toggleCredsModal()">⚙️ Cambiar Credenciales</button>
                 <button class="btn btn-outline" onclick="doLogout()">🚪 Cerrar Sesión</button>
             </div>
         </header>
+
+        <!-- Modal Cambiar Credenciales -->
+        <div id="creds-box" class="card" style="display: none; border-color: var(--purple); background: rgba(139, 92, 246, 0.05);">
+            <h2>⚙️ Cambiar Usuario y Contraseña de Administrador</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Nuevo Usuario</label>
+                    <input type="text" id="new-admin-user" placeholder="Ej: pedro">
+                </div>
+                <div class="form-group">
+                    <label>Nueva Contraseña</label>
+                    <input type="password" id="new-admin-pass" placeholder="••••••••">
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-green" onclick="submitChangeCreds()">💾 Guardar Nuevas Credenciales</button>
+                <button class="btn btn-outline" onclick="toggleCredsModal()">Cancelar</button>
+            </div>
+        </div>
 
         <!-- Sección Generador de Claves -->
         <div class="card">

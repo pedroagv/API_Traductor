@@ -9,12 +9,6 @@ import urllib.parse
 PORT = int(os.environ.get("PORT", 8000))
 DATA_FILE = os.path.join(os.path.dirname(__file__), "licenses.json")
 
-# Credenciales de Administrador
-ADMIN_USER = os.environ.get("ADMIN_USER", "pedroadmin")
-ADMIN_PASS = os.environ.get("ADMIN_PASS", "SubVozPro2026!")
-ADMIN_TOKEN = hashlib.sha256(f"{ADMIN_USER}:{ADMIN_PASS}:SUBVOZ-ADMIN-SALT".encode()).hexdigest()
-
-
 def load_db() -> dict:
     if os.path.exists(DATA_FILE):
         try:
@@ -23,6 +17,10 @@ def load_db() -> dict:
         except Exception:
             pass
     initial = {
+        "admin_config": {
+            "user": "laconcha",
+            "pass": "quelapario"
+        },
         "licenses": {
             "DEMO-SINGLE-KEY": {
                 "max_seats": 1,
@@ -52,8 +50,22 @@ def save_db(data: dict):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
+def get_admin_credentials() -> tuple[str, str]:
+    db = load_db()
+    admin_cfg = db.get("admin_config", {})
+    user = admin_cfg.get("user") or os.environ.get("ADMIN_USER", "laconcha")
+    password = admin_cfg.get("pass") or os.environ.get("ADMIN_PASS", "quelapario")
+    return user, password
+
+
+def get_admin_token(user: str = None, password: str = None) -> str:
+    if not user or not password:
+        user, password = get_admin_credentials()
+    return hashlib.sha256(f"{user}:{password}:SUBVOZ-ADMIN-SALT".encode()).hexdigest()
+
+
 def check_auth_token(token: str) -> bool:
-    return token and token == ADMIN_TOKEN
+    return token and token == get_admin_token()
 
 
 class LicenseAPIHandler(BaseHTTPRequestHandler):
@@ -195,13 +207,41 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
             parsed = urllib.parse.parse_qs(post_body)
             user = parsed.get("user", [""])[0].strip()
             password = parsed.get("pass", [""])[0].strip()
+            valid_user, valid_pass = get_admin_credentials()
 
-            if user == ADMIN_USER and password == ADMIN_PASS:
+            if user == valid_user and password == valid_pass:
+                token = get_admin_token(user, password)
                 self._set_headers(200)
-                self.wfile.write(json.dumps({"success": True, "token": ADMIN_TOKEN}).encode())
+                self.wfile.write(json.dumps({"success": True, "token": token}).encode())
             else:
                 self._set_headers(401)
                 self.wfile.write(json.dumps({"success": False, "message": "Usuario o clave incorrectos"}).encode())
+
+        elif self.path == "/admin/api/change-credentials":
+            content_len = int(self.headers.get("Content-Length", 0))
+            post_body = self.rfile.read(content_len).decode("utf-8")
+            parsed = urllib.parse.parse_qs(post_body)
+            token = parsed.get("token", [""])[0]
+            new_user = parsed.get("new_user", [""])[0].strip()
+            new_pass = parsed.get("new_pass", [""])[0].strip()
+
+            if not check_auth_token(token):
+                self._set_headers(401)
+                self.wfile.write(json.dumps({"success": False, "message": "No autorizado"}).encode())
+                return
+
+            if not new_user or not new_pass:
+                self._set_headers(400)
+                self.wfile.write(json.dumps({"success": False, "message": "El usuario y contraseña no pueden estar vacíos"}).encode())
+                return
+
+            db = load_db()
+            db["admin_config"] = {"user": new_user, "pass": new_pass}
+            save_db(db)
+
+            new_token = get_admin_token(new_user, new_pass)
+            self._set_headers(200)
+            self.wfile.write(json.dumps({"success": True, "message": "Credenciales actualizadas exitosamente", "token": new_token}).encode())
 
         elif self.path == "/admin/api/delete-key":
             content_len = int(self.headers.get("Content-Length", 0))
