@@ -630,9 +630,9 @@
 
                         <div style="margin: 14px 0; background: #F1F5F9; border: 1px solid #CBD5E1; padding: 12px; border-radius: 10px;">
                             <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 6px;">
-                                Número de equipos / licencias:
+                                Número de equipos / licencias (Mínimo 3):
                             </label>
-                            <input type="number" id="seats-input" min="2" max="500" value="5" oninput="updateCorpQuote()" style="width: 100%; background: #FFFFFF; border: 1px solid #94A3B8; color: #0F172A; font-size: 16px; font-weight: 700; padding: 8px 12px; border-radius: 8px; outline: none;">
+                            <input type="number" id="seats-input" min="3" max="500" value="3" oninput="updateCorpQuote()" style="width: 100%; background: #FFFFFF; border: 1px solid #94A3B8; color: #0F172A; font-size: 16px; font-weight: 700; padding: 8px 12px; border-radius: 8px; outline: none;">
                         </div>
 
                         <ul class="price-list">
@@ -643,7 +643,7 @@
                         </ul>
                     </div>
                     <a id="corp-whatsapp-btn" href="#" target="_blank" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 20px; background: linear-gradient(135deg, #7C3AED 0%, #2563EB 100%); border: none;">
-                        💬 Cotizar 5 Equipos por WhatsApp
+                        💬 Cotizar 3 Equipos por WhatsApp
                     </a>
                 </div>
             </div>
@@ -659,8 +659,8 @@
     <script>
         function updateCorpQuote() {
             var input = document.getElementById("seats-input");
-            var seats = parseInt(input.value) || 5;
-            if (seats < 1) seats = 1;
+            var seats = parseInt(input.value) || 3;
+            if (seats < 3) seats = 3;
             
             var unitPrice = 25000;
             if (seats >= 20) unitPrice = 20000;
