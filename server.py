@@ -32,7 +32,7 @@ def load_db() -> dict:
         },
         "updates": {
             "latest_version": "1.0.0",
-            "download_url": "https://github.com/pedro/reunion/releases/latest",
+            "download_url": "https://github.com/pedroagv/API_Traductor/releases/latest",
             "release_notes": "Versión 1.0.0 inicial con soporte multidioma y cambio de modelos.",
         },
     }
@@ -156,12 +156,12 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                 "html_url": "/download",
                 "notes": updates.get("release_notes", ""),
             }).encode())
-        elif self.path in ("/download", "/download/", "/ReunionPro_Portable.zip") or self.path.startswith("/downloads/"):
+        elif self.path in ("/download", "/download/", "/ReunionPro_Portable.zip", "/SubVozPro_Portable.zip") or self.path.startswith("/downloads/"):
             db = load_db()
             updates = db.get("updates", {})
             download_url = updates.get("download_url", "").strip()
 
-            if download_url and download_url != "/download":
+            if download_url and download_url != "/download" and "pedro/reunion" not in download_url:
                 self.send_response(302)
                 self.send_header("Location", download_url)
                 self.end_headers()
