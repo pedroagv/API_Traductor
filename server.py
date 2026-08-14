@@ -265,6 +265,87 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                 self._set_headers(404)
                 self.wfile.write(json.dumps({"success": False, "message": "Clave no encontrada"}).encode())
 
+        elif self.path == "/submit-ticket":
+            content_len = int(self.headers.get("Content-Length", 0))
+            post_body = self.rfile.read(content_len).decode("utf-8")
+            parsed = urllib.parse.parse_qs(post_body)
+            
+            hw_id = parsed.get("hw_id", [""])[0].strip()
+            mac = parsed.get("mac", [""])[0].strip()
+            hostname = parsed.get("hostname", [""])[0].strip()
+            subject = parsed.get("subject", ["Soporte Técnico"])[0].strip()
+            category = parsed.get("category", ["Soporte Técnico"])[0].strip()
+            message = parsed.get("message", [""])[0].strip()
+            logs = parsed.get("logs", [""])[0].strip()
+
+            if not message and not subject:
+                self._set_headers(400)
+                self.wfile.write(json.dumps({"success": False, "message": "El mensaje no puede estar vacío"}).encode())
+                return
+
+            db = load_db()
+            tickets = db.get("tickets", {})
+            
+            import random
+            ticket_id = f"TCK-{random.randint(1000, 9999)}"
+            now_iso = datetime.datetime.now().isoformat()
+
+            ticket_obj = {
+                "id": ticket_id,
+                "created_at": now_iso,
+                "hw_id": hw_id,
+                "mac": mac,
+                "hostname": hostname,
+                "subject": subject,
+                "category": category,
+                "message": message,
+                "logs": logs,
+                "status": "Abierto ⏳",
+                "admin_reply": "",
+                "meeting_url": "",
+                "updated_at": now_iso
+            }
+            tickets[ticket_id] = ticket_obj
+            db["tickets"] = tickets
+            save_db(db)
+
+            self._set_headers(200)
+            self.wfile.write(json.dumps({
+                "success": True,
+                "message": f"¡Ticket {ticket_id} creado con éxito!",
+                "ticket_id": ticket_id
+            }).encode())
+
+        elif self.path == "/admin/api/reply-ticket":
+            content_len = int(self.headers.get("Content-Length", 0))
+            post_body = self.rfile.read(content_len).decode("utf-8")
+            parsed = urllib.parse.parse_qs(post_body)
+            
+            token = parsed.get("token", [""])[0]
+            ticket_id = parsed.get("ticket_id", [""])[0].strip()
+            status = parsed.get("status", ["En Revisión 🛠️"])[0].strip()
+            admin_reply = parsed.get("admin_reply", [""])[0].strip()
+            meeting_url = parsed.get("meeting_url", [""])[0].strip()
+
+            if not check_auth_token(token):
+                self._set_headers(401)
+                self.wfile.write(json.dumps({"success": False, "message": "No autorizado"}).encode())
+                return
+
+            db = load_db()
+            tickets = db.get("tickets", {})
+            if ticket_id in tickets:
+                tickets[ticket_id]["status"] = status
+                tickets[ticket_id]["admin_reply"] = admin_reply
+                tickets[ticket_id]["meeting_url"] = meeting_url
+                tickets[ticket_id]["updated_at"] = datetime.datetime.now().isoformat()
+                save_db(db)
+                self._set_headers(200)
+                self.wfile.write(json.dumps({"success": True, "message": "Ticket actualizado"}).encode())
+            else:
+                self._set_headers(404)
+                self.wfile.write(json.dumps({"success": False, "message": "Ticket no encontrado"}).encode())
+
         else:
             self._set_headers(404)
             self.wfile.write(json.dumps({"error": "Endpoint no encontrado"}).encode())
@@ -310,6 +391,15 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                 self._set_headers(404)
                 self.wfile.write(json.dumps({"error": "admin.html no encontrado"}).encode())
 
+        elif path == "/check-tickets":
+            mac = query.get("mac", [""])[0].strip()
+            hw_id = query.get("hw_id", [""])[0].strip()
+            db = load_db()
+            tickets = db.get("tickets", {})
+            user_tickets = [t for t in tickets.values() if (mac and t.get("mac") == mac) or (hw_id and t.get("hw_id") == hw_id)]
+            self._set_headers(200)
+            self.wfile.write(json.dumps({"success": True, "tickets": user_tickets}).encode())
+
         elif path == "/admin/api/licenses":
             token = query.get("token", [""])[0]
             if not check_auth_token(token):
@@ -320,6 +410,17 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
             db = load_db()
             self._set_headers(200)
             self.wfile.write(json.dumps({"success": True, "licenses": db.get("licenses", {})}).encode())
+
+        elif path == "/admin/api/tickets":
+            token = query.get("token", [""])[0]
+            if not check_auth_token(token):
+                self._set_headers(401)
+                self.wfile.write(json.dumps({"success": False, "message": "No autorizado"}).encode())
+                return
+
+            db = load_db()
+            self._set_headers(200)
+            self.wfile.write(json.dumps({"success": True, "tickets": db.get("tickets", {})}).encode())
 
         elif path == "/api-status":
             self._set_headers(200)
