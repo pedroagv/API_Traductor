@@ -157,10 +157,19 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                 "notes": updates.get("release_notes", ""),
             }).encode())
         elif self.path in ("/download", "/download/", "/ReunionPro_Portable.zip") or self.path.startswith("/downloads/"):
+            db = load_db()
+            updates = db.get("updates", {})
+            download_url = updates.get("download_url", "").strip()
+
+            if download_url and download_url != "/download":
+                self.send_response(302)
+                self.send_header("Location", download_url)
+                self.end_headers()
+                return
+
             downloads_dir = os.path.join(os.path.dirname(__file__), "downloads")
             zip_path = os.path.join(downloads_dir, "ReunionPro_Portable.zip")
             if not os.path.exists(zip_path):
-                # Si aún no existe la subcarpeta downloads, buscar en la raíz de API
                 zip_path = os.path.join(os.path.dirname(__file__), "ReunionPro_Portable.zip")
 
             if os.path.exists(zip_path):
@@ -173,8 +182,11 @@ class LicenseAPIHandler(BaseHTTPRequestHandler):
                     while chunk := f.read(65536):
                         self.wfile.write(chunk)
             else:
-                self._set_headers(404)
-                self.wfile.write(json.dumps({"error": "El archivo portable aún no ha sido subido al servidor."}).encode())
+                # Redirigir por defecto a los releases de GitHub
+                default_rel = "https://github.com/pedroagv/API_Traductor/releases/latest"
+                self.send_response(302)
+                self.send_header("Location", default_rel)
+                self.end_headers()
         elif self.path == "/api-status":
             self._set_headers(200)
             self.wfile.write(json.dumps({"status": "Reunion Pro License API Running"}).encode())
