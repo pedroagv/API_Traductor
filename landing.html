@@ -13,16 +13,17 @@
     
     <style>
         :root {
-            --bg-dark: #0B0F19;
-            --bg-card: #111827;
-            --bg-card-hover: #1F2937;
-            --border: #1E293B;
-            --accent-blue: #3B82F6;
-            --accent-purple: #8B5CF6;
-            --accent-green: #10B981;
-            --accent-gold: #F59E0B;
-            --text-main: #F8FAFC;
-            --text-muted: #94A3B8;
+            --bg-light: #F8FAFC;
+            --bg-card: #FFFFFF;
+            --bg-card-hover: #FFFFFF;
+            --border: #E2E8F0;
+            --border-hover: #CBD5E1;
+            --accent-blue: #2563EB;
+            --accent-purple: #7C3AED;
+            --accent-green: #059669;
+            --accent-amber: #D97706;
+            --text-main: #0F172A;
+            --text-muted: #475569;
         }
 
         * {
@@ -33,22 +34,22 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-dark);
+            background-color: var(--bg-light);
             color: var(--text-main);
             line-height: 1.6;
             overflow-x: hidden;
         }
 
-        /* Ambient Glow Backgrounds */
+        /* Ambient Radial Lights */
         .glow-top {
             position: absolute;
             top: -150px;
             left: 50%;
             transform: translateX(-50%);
-            width: 700px;
-            height: 400px;
-            background: radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, rgba(139, 92, 246, 0.15) 50%, rgba(0,0,0,0) 80%);
-            filter: blur(80px);
+            width: 800px;
+            height: 450px;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.08) 0%, rgba(124, 58, 237, 0.05) 50%, rgba(255,255,255,0) 80%);
+            filter: blur(60px);
             z-index: 0;
             pointer-events: none;
         }
@@ -66,15 +67,15 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 24px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 22px 0;
+            border-bottom: 1px solid var(--border);
         }
 
         .brand {
             font-family: 'Outfit', sans-serif;
             font-size: 24px;
             font-weight: 800;
-            background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+            background: linear-gradient(135deg, #1E40AF 0%, #6D28D9 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             display: flex;
@@ -85,17 +86,17 @@
         .brand-badge {
             font-size: 11px;
             font-weight: 700;
-            background: rgba(59, 130, 246, 0.15);
-            color: #60A5FA;
+            background: #EFF6FF;
+            color: #2563EB;
             padding: 2px 8px;
             border-radius: 20px;
-            border: 1px solid rgba(59, 130, 246, 0.3);
+            border: 1px solid #BFDBFE;
             -webkit-text-fill-color: initial;
         }
 
         .nav-links {
             display: flex;
-            gap: 20px;
+            gap: 16px;
             align-items: center;
         }
 
@@ -114,44 +115,44 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+            background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%);
             color: #FFFFFF;
-            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(139, 92, 246, 0.5);
+            box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35);
         }
 
         .btn-whatsapp {
             background: #10B981;
-            color: #000000;
+            color: #FFFFFF;
             font-weight: 700;
-            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
         }
 
         .btn-whatsapp:hover {
             background: #059669;
-            color: #ffffff;
             transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(16, 185, 129, 0.5);
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
         }
 
         .btn-outline {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-main);
+            background: #FFFFFF;
+            color: #1E293B;
             border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         .btn-outline:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: #475569;
+            background: #F1F5F9;
+            border-color: #CBD5E1;
         }
 
         /* Hero Section */
         .hero {
-            padding: 80px 0 60px;
+            padding: 70px 0 50px;
             text-align: center;
         }
 
@@ -159,11 +160,11 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 6px 16px;
+            padding: 6px 18px;
             border-radius: 30px;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            color: #34D399;
+            background: #ECFDF5;
+            border: 1px solid #A7F3D0;
+            color: #047857;
             font-size: 14px;
             font-weight: 600;
             margin-bottom: 24px;
@@ -171,15 +172,16 @@
 
         .hero h1 {
             font-family: 'Outfit', sans-serif;
-            font-size: 54px;
+            font-size: 56px;
             font-weight: 800;
             line-height: 1.15;
             margin-bottom: 20px;
             letter-spacing: -1px;
+            color: #0F172A;
         }
 
         .hero h1 span {
-            background: linear-gradient(135deg, #60A5FA 0%, #A78BFA 100%);
+            background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -187,7 +189,7 @@
         .hero p {
             font-size: 19px;
             color: var(--text-muted);
-            max-width: 760px;
+            max-width: 780px;
             margin: 0 auto 36px;
             font-weight: 400;
         }
@@ -197,15 +199,15 @@
             gap: 16px;
             justify-content: center;
             flex-wrap: wrap;
-            margin-bottom: 60px;
+            margin-bottom: 50px;
         }
 
-        /* Interactive Demo Box */
+        /* Interactive Demo Box (Fondo oscuro elegante para contraste) */
         .demo-window {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
+            background: #0F172A;
+            border: 1px solid #334155;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
             max-width: 860px;
             margin: 0 auto;
             overflow: hidden;
@@ -232,7 +234,7 @@
 
         .demo-title {
             font-size: 13px;
-            color: var(--text-muted);
+            color: #94A3B8;
             font-weight: 600;
             margin-left: 10px;
         }
@@ -245,8 +247,8 @@
         }
 
         .subtitle-box {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid var(--border);
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid #334155;
             border-radius: 12px;
             padding: 16px;
         }
@@ -266,13 +268,13 @@
         .subtitle-text {
             font-size: 16px;
             font-weight: 500;
-            color: var(--text-main);
+            color: #F8FAFC;
         }
 
         /* Features Section */
         .section-title {
             text-align: center;
-            margin: 100px 0 60px;
+            margin: 90px 0 50px;
         }
 
         .section-title h2 {
@@ -280,6 +282,7 @@
             font-size: 38px;
             font-weight: 800;
             margin-bottom: 12px;
+            color: #0F172A;
         }
 
         .section-title p {
@@ -299,12 +302,13 @@
             padding: 32px;
             border-radius: 16px;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
         }
 
         .feature-card:hover {
-            background: var(--bg-card-hover);
-            transform: translateY(-5px);
-            border-color: rgba(59, 130, 246, 0.4);
+            transform: translateY(-4px);
+            border-color: #BFDBFE;
+            box-shadow: 0 12px 30px rgba(37, 99, 235, 0.08);
         }
 
         .feature-icon {
@@ -317,58 +321,13 @@
             font-size: 20px;
             font-weight: 700;
             margin-bottom: 10px;
+            color: #0F172A;
         }
 
         .feature-card p {
             color: var(--text-muted);
             font-size: 15px;
             line-height: 1.5;
-        }
-
-        /* Models Section */
-        .models-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-            margin-top: 40px;
-        }
-
-        .model-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            padding: 20px;
-            border-radius: 14px;
-            text-align: center;
-            position: relative;
-        }
-
-        .model-card.popular {
-            border-color: #8B5CF6;
-            background: linear-gradient(180deg, rgba(139, 92, 246, 0.15) 0%, var(--bg-card) 100%);
-        }
-
-        .popular-badge {
-            position: absolute;
-            top: -12px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #8B5CF6;
-            color: #ffffff;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 2px 10px;
-            border-radius: 20px;
-        }
-
-        .model-card h4 {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        .model-card p {
-            font-size: 13px;
-            color: var(--text-muted);
         }
 
         /* Pricing & Social Impact Section */
@@ -389,24 +348,32 @@
             justify-content: space-between;
             position: relative;
             overflow: hidden;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+            transition: all 0.3s ease;
+        }
+
+        .price-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
         }
 
         .price-card.featured {
-            border-color: #3B82F6;
-            box-shadow: 0 10px 40px rgba(59, 130, 246, 0.2);
+            border: 2px solid #2563EB;
+            box-shadow: 0 10px 35px rgba(37, 99, 235, 0.15);
         }
 
         .price-title {
             font-size: 19px;
             font-weight: 700;
             margin-bottom: 6px;
+            color: #0F172A;
         }
 
         .price-num {
             font-family: 'Outfit', sans-serif;
             font-size: 32px;
             font-weight: 800;
-            color: var(--text-main);
+            color: #0F172A;
             margin: 12px 0;
         }
 
@@ -433,13 +400,13 @@
         }
 
         .price-list li strong {
-            color: var(--text-main);
+            color: #0F172A;
         }
 
         /* Footer */
         footer {
             border-top: 1px solid var(--border);
-            margin-top: 120px;
+            margin-top: 100px;
             padding: 40px 0;
             text-align: center;
             color: var(--text-muted);
@@ -503,7 +470,7 @@
                 </a>
             </div>
 
-            <!-- Demo Window Preview -->
+            <!-- Demo Window Preview (Fondo Oscuro para destacar los subtítulos) -->
             <div class="demo-window">
                 <div class="demo-header">
                     <div class="demo-dot dot-red"></div>
@@ -524,30 +491,30 @@
             </div>
 
             <!-- Honest Humor Banner -->
-            <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(17, 24, 39, 0.9) 100%); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 16px; padding: 28px; margin: 40px auto 0; max-width: 860px; text-align: center;">
-                <h3 style="font-size: 22px; font-weight: 800; color: #F8FAFC; margin-bottom: 10px;">
+            <div style="background: linear-gradient(135deg, #EFF6FF 0%, #F5F3FF 100%); border: 1px solid #BFDBFE; border-radius: 16px; padding: 28px; margin: 40px auto 0; max-width: 860px; text-align: center; box-shadow: 0 4px 16px rgba(37, 99, 235, 0.05);">
+                <h3 style="font-size: 22px; font-weight: 800; color: #1E3A8A; margin-bottom: 10px;">
                     💡 Seamos honestos: No te vamos a enseñar inglés...
                 </h3>
-                <p style="font-size: 16px; color: #94A3B8; line-height: 1.6; max-width: 740px; margin: 0 auto;">
-                    Para aprender inglés desde cero están los cursos y las academias. Lo que nosotros hacemos es <strong style="color: #60A5FA;">hacerte la vida 100 veces más fácil</strong> para entenderlo en vivo. 
+                <p style="font-size: 16px; color: #334155; line-height: 1.6; max-width: 740px; margin: 0 auto;">
+                    Para aprender inglés desde cero están los cursos y las academias. Lo que nosotros hacemos es <strong style="color: #2563EB;">hacerte la vida 100 veces más fácil</strong> para entenderlo en vivo. 
                     ¿Acaso no te encantaría que todas las personas que te hablan en inglés tuvieran subtítulos en la vida real? ¡Eso es exactamente lo que hace <strong>⭐ SubVoz Pro</strong>!
                 </p>
             </div>
         </section>
 
         <!-- Episodem Partner & Training Section -->
-        <section id="episodem" style="margin-top: 40px;">
-            <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(17, 24, 39, 0.95) 100%); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 20px; padding: 36px 28px; text-align: center; max-width: 860px; margin: 0 auto;">
-                <span style="background: rgba(139, 92, 246, 0.2); color: #C084FC; font-size: 12px; font-weight: 700; padding: 4px 14px; border-radius: 20px; border: 1px solid rgba(139, 92, 246, 0.4); display: inline-block; margin-bottom: 14px;">
+        <section id="episodem" style="margin-top: 30px;">
+            <div style="background: linear-gradient(135deg, #F3E8FF 0%, #FFFFFF 100%); border: 1px solid #DDD6FE; border-radius: 20px; padding: 36px 28px; text-align: center; max-width: 860px; margin: 0 auto; box-shadow: 0 4px 20px rgba(124, 58, 237, 0.05);">
+                <span style="background: #ECE9FE; color: #6D28D9; font-size: 12px; font-weight: 700; padding: 4px 14px; border-radius: 20px; border: 1px solid #C4B5FD; display: inline-block; margin-bottom: 14px;">
                     🎓 RECOMENDACIÓN PARA ENTRENAR TU OÍDO
                 </span>
-                <h3 style="font-family: 'Outfit', sans-serif; font-size: 28px; font-weight: 800; color: #F8FAFC; margin-bottom: 10px;">
+                <h3 style="font-family: 'Outfit', sans-serif; font-size: 28px; font-weight: 800; color: #4C1D95; margin-bottom: 10px;">
                     ¿Quieres entrenar tu inglés y poner a prueba tu comprensión?
                 </h3>
-                <p style="font-size: 16px; color: #94A3B8; max-width: 720px; margin: 0 auto 22px; line-height: 1.6;">
-                    Te recomendamos conocer <strong style="color: #A78BFA;">Episodem</strong>. Es una excelente plataforma interactiva donde puedes practicar tu oído, aprender vocabulario real con episodios interactivos y mejorar tu comprensión auditiva.
+                <p style="font-size: 16px; color: #475569; max-width: 720px; margin: 0 auto 22px; line-height: 1.6;">
+                    Te recomendamos conocer <strong style="color: #6D28D9;">Episodem</strong>. Es una excelente plataforma interactiva donde puedes practicar tu oído, aprender vocabulario real con episodios interactivos y mejorar tu comprensión auditiva.
                 </p>
-                <a href="https://episodem.com" target="_blank" class="btn btn-primary" style="background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%); border: none; font-size: 15px; padding: 12px 24px;">
+                <a href="https://episodem.com" target="_blank" class="btn btn-primary" style="background: linear-gradient(135deg, #7C3AED 0%, #DB2777 100%); border: none; font-size: 15px; padding: 12px 24px;">
                     🚀 Entrenar y Registrarte en Episodem.com
                 </a>
             </div>
@@ -620,11 +587,11 @@
                 </div>
 
                 <!-- Card Nequi -->
-                <div class="price-card featured">
+                <div class="price-card featured" style="background: linear-gradient(180deg, #EFF6FF 0%, #FFFFFF 100%);">
                     <div>
-                        <div class="price-title">⚡ Licencia Vitalicia</div>
-                        <p style="color: #60A5FA;">Pago único sin mensualidades</p>
-                        <div class="price-num">$30.000 <span>COP / pago único</span></div>
+                        <div class="price-title" style="color: #1E40AF;">⚡ Licencia Vitalicia</div>
+                        <p style="color: #2563EB;">Pago único sin mensualidades</p>
+                        <div class="price-num" style="color: #1E3A8A;">$30.000 <span>COP / pago único</span></div>
                         <ul class="price-list">
                             <li>✅ <strong>Licencia de por vida</strong> para tu equipo</li>
                             <li>✅ Actualizaciones futuras incluidas</li>
@@ -632,40 +599,40 @@
                             <li>✅ Para que el creador coma algo rico 🍔☕</li>
                         </ul>
                     </div>
-                    <a href="https://wa.me/573008443272?text=¡Hola%20Pedro!%20Deseo%20adquirir%20mi%20licencia%20de%20Reunion%20Pro%20por%20Nequi" target="_blank" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 20px;">
+                    <a href="https://wa.me/573008443272?text=¡Hola%20Pedro!%20Deseo%20adquirir%20mi%20licencia%20de%20SubVoz%20Pro%20por%20Nequi" target="_blank" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 20px;">
                         Comprar por Nequi ($30.000 COP)
                     </a>
                 </div>
 
                 <!-- Card Social Beca -->
-                <div class="price-card">
+                <div class="price-card" style="border-color: #FDE68A; background: linear-gradient(180deg, #FFFBEB 0%, #FFFFFF 100%);">
                     <div>
-                        <div class="price-title">❤️ Licencia Social / Beca</div>
-                        <p style="color: #F59E0B;">Primero ayudar a las personas</p>
-                        <div class="price-num">GRATIS <span>/ si lo necesitas</span></div>
+                        <div class="price-title" style="color: #92400E;">❤️ Licencia Social / Beca</div>
+                        <p style="color: #D97706;">Primero ayudar a las personas</p>
+                        <div class="price-num" style="color: #78350F;">GRATIS <span>/ si lo necesitas</span></div>
                         <ul class="price-list">
                             <li>✅ Para estudiantes o personas vulnerables</li>
                             <li>✅ Escríbenos tu historia por WhatsApp</li>
                             <li>✅ Con gusto te regalamos la clave</li>
                         </ul>
                     </div>
-                    <a href="https://wa.me/573008443272?text=¡Hola%20Pedro!%20Te%20escribo%20para%20contarte%20mi%20historia%20y%20solicitar%20una%20licencia%20becada%20de%20SubVoz%20Pro" target="_blank" class="btn btn-whatsapp" style="width: 100%; justify-content: center; margin-top: 20px;">
+                    <a href="https://wa.me/573008443272?text=¡Hola%20Pedro!%20Te%20escribo%20para%20contarte%20mi%20historia%20y%20solicitar%20una%20licencia%20becada%20de%20SubVoz%20Pro" target="_blank" class="btn btn-whatsapp" style="width: 100%; justify-content: center; margin-top: 20px; background: #D97706;">
                         Solicitar Licencia Social
                     </a>
                 </div>
 
                 <!-- Card Corporativa / Empresas -->
-                <div class="price-card" style="border-color: rgba(139, 92, 246, 0.5); background: linear-gradient(180deg, rgba(139, 92, 246, 0.08) 0%, var(--bg-card) 100%);">
+                <div class="price-card" style="border-color: #C4B5FD; background: linear-gradient(180deg, #F5F3FF 0%, #FFFFFF 100%);">
                     <div>
-                        <div class="price-title">🏢 Licencia Corporativa</div>
-                        <p style="color: #A78BFA;">Para equipos, empresas y colegios</p>
-                        <div class="price-num" id="corp-price-display">$25.000 <span style="font-size: 14px;">COP / equipo</span></div>
+                        <div class="price-title" style="color: #5B21B6;">🏢 Licencia Corporativa</div>
+                        <p style="color: #6D28D9;">Para equipos, empresas y colegios</p>
+                        <div class="price-num" id="corp-price-display" style="color: #4C1D95;">$25.000 <span style="font-size: 13px;">COP / equipo</span></div>
 
-                        <div style="margin: 14px 0; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border); padding: 12px; border-radius: 10px;">
-                            <label style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px;">
+                        <div style="margin: 14px 0; background: #F1F5F9; border: 1px solid #CBD5E1; padding: 12px; border-radius: 10px;">
+                            <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 6px;">
                                 Número de equipos / licencias:
                             </label>
-                            <input type="number" id="seats-input" min="2" max="500" value="5" oninput="updateCorpQuote()" style="width: 100%; background: #1E293B; border: 1px solid rgba(139, 92, 246, 0.5); color: #FFFFFF; font-size: 16px; font-weight: 700; padding: 8px 12px; border-radius: 8px; outline: none;">
+                            <input type="number" id="seats-input" min="2" max="500" value="5" oninput="updateCorpQuote()" style="width: 100%; background: #FFFFFF; border: 1px solid #94A3B8; color: #0F172A; font-size: 16px; font-weight: 700; padding: 8px 12px; border-radius: 8px; outline: none;">
                         </div>
 
                         <ul class="price-list">
@@ -675,7 +642,7 @@
                             <li>✅ Activación remota instantánea</li>
                         </ul>
                     </div>
-                    <a id="corp-whatsapp-btn" href="#" target="_blank" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 20px; background: linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%); border: none;">
+                    <a id="corp-whatsapp-btn" href="#" target="_blank" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 20px; background: linear-gradient(135deg, #7C3AED 0%, #2563EB 100%); border: none;">
                         💬 Cotizar 5 Equipos por WhatsApp
                     </a>
                 </div>
