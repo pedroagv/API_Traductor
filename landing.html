@@ -640,15 +640,63 @@
                         Solicitar Licencia Social
                     </a>
                 </div>
+
+                <!-- Card Corporativa / Empresas -->
+                <div class="price-card" style="border-color: rgba(139, 92, 246, 0.5); background: linear-gradient(180deg, rgba(139, 92, 246, 0.08) 0%, var(--bg-card) 100%);">
+                    <div>
+                        <div class="price-title">🏢 Licencia Corporativa</div>
+                        <p style="color: #A78BFA;">Para equipos, empresas y colegios</p>
+                        <div class="price-num" id="corp-price-display">$25.000 <span style="font-size: 14px;">COP / equipo</span></div>
+
+                        <div style="margin: 14px 0; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border); padding: 12px; border-radius: 10px;">
+                            <label style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px;">
+                                Número de equipos / licencias:
+                            </label>
+                            <input type="number" id="seats-input" min="2" max="500" value="5" oninput="updateCorpQuote()" style="width: 100%; background: #1E293B; border: 1px solid rgba(139, 92, 246, 0.5); color: #FFFFFF; font-size: 16px; font-weight: 700; padding: 8px 12px; border-radius: 8px; outline: none;">
+                        </div>
+
+                        <ul class="price-list">
+                            <li>✅ <strong>1 Clave Multiusuario</strong> para todos tus equipos</li>
+                            <li>✅ Descuentos especiales por volumen</li>
+                            <li>✅ Soporte prioritario empresarial</li>
+                            <li>✅ Activación remota instantánea</li>
+                        </ul>
+                    </div>
+                    <a id="corp-whatsapp-btn" href="#" target="_blank" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 20px; background: linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%); border: none;">
+                        💬 Cotizar 5 Equipos por WhatsApp
+                    </a>
+                </div>
             </div>
         </section>
 
         <!-- Footer -->
         <footer>
             <p>© 2026 ⭐ SubVoz Pro. Desarrollado con tecnología de procesamiento local para privacidad total.</p>
-            <p style="margin-top: 6px; font-size: 13px;">Soporte y Ventas por WhatsApp: <strong>+57 3008443272</strong></p>
+            <p style="margin-top: 6px; font-size: 13px;">Soporte, Ventas y Cotizaciones Empresariales por WhatsApp: <strong>+57 3008443272</strong></p>
         </footer>
     </div>
+
+    <script>
+        function updateCorpQuote() {
+            var input = document.getElementById("seats-input");
+            var seats = parseInt(input.value) || 5;
+            if (seats < 1) seats = 1;
+            
+            var unitPrice = 25000;
+            if (seats >= 20) unitPrice = 20000;
+            else if (seats >= 10) unitPrice = 22000;
+
+            var total = seats * unitPrice;
+            var totalFormatted = total.toLocaleString('es-CO');
+            
+            document.getElementById("corp-price-display").innerHTML = "$" + unitPrice.toLocaleString('es-CO') + " <span style='font-size: 13px;'>COP/equipo (Total: $" + totalFormatted + ")</span>";
+            
+            var msg = "¡Hola Pedro! Represento a una empresa/institución y me gustaría cotizar una Licencia Corporativa de ⭐ SubVoz Pro para " + seats + " equipos (Cotización estimada: $" + totalFormatted + " COP).";
+            document.getElementById("corp-whatsapp-btn").href = "https://wa.me/573008443272?text=" + encodeURIComponent(msg);
+            document.getElementById("corp-whatsapp-btn").innerHTML = "💬 Cotizar " + seats + " Equipos por WhatsApp";
+        }
+        document.addEventListener("DOMContentLoaded", updateCorpQuote);
+    </script>
 
 </body>
 </html>
