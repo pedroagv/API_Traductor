@@ -5,30 +5,167 @@ import os
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import urllib.parse
+import urllib.request
 
 PORT = int(os.environ.get("PORT", 8000))
 DATA_FILE = os.path.join(os.path.dirname(__file__), "licenses.json")
 TRIAL_DAYS = 60
 
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://ilzwqheusmcqjppjuxac.supabase.co").rstrip("/")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "sb_publishable_N8cqypOpe_lTtjBI4UrPnA_IVz8Xyzy")
+
+
+def supabase_request(endpoint: str, method: str = "GET", payload: dict | list = None, prefer: str = None) -> list | dict | None:
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return None
+    url = f"{SUPABASE_URL}/rest/v1/{endpoint.lstrip('/')}"
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+    if prefer:
+        headers["Prefer"] = prefer
+
+    data_bytes = json.dumps(payload).encode("utf-8") if payload is not None else None
+    req = urllib.request.Request(url, data=data_bytes, method=method, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            body = resp.read().decode("utf-8")
+            if body:
+                return json.loads(body)
+            return []
+    except Exception as exc:
+        print(f"[Supabase API Error] {method} {endpoint}: {exc}")
+        return None
+
+
+def load_db_supabase() -> dict | None:
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return None
+
+    try:
+        dev_rows = supabase_request("devices?select=*")
+        tick_rows = supabase_request("tickets?select=*")
+        cfg_rows = supabase_request("app_config?select=*")
+
+        if dev_rows is not None and tick_rows is not None:
+            devices = {r["hw_id"]: r for r in dev_rows if isinstance(r, dict) and "hw_id" in r}
+            tickets = {r["id"]: r for r in tick_rows if isinstance(r, dict) and "id" in r}
+
+            admin_cfg = {"user": os.environ.get("ADMIN_USER", "laconcha"), "pass": os.environ.get("ADMIN_PASS", "quelapario")}
+            updates = {
+                "latest_version": "1.0.0",
+                "download_url": "https://github.com/pedroagv/API_Traductor/releases/latest/download/SubVozPro_Portable.zip",
+                "release_notes": "Versión 1.0.0 inicial con soporte multidioma y cambio de modelos.",
+            }
+
+            if cfg_rows:
+                for r in cfg_rows:
+                    if isinstance(r, dict):
+                        if r.get("key") == "admin_config" and r.get("value"):
+                            admin_cfg = r["value"] if isinstance(r["value"], dict) else json.loads(r["value"])
+                        elif r.get("key") == "updates" and r.get("value"):
+                            updates = r["value"] if isinstance(r["value"], dict) else json.loads(r["value"])
+
+            return {
+                "admin_config": admin_cfg,
+                "devices": devices,
+                "tickets": tickets,
+                "updates": updates,
+            }
+
+        # Backup: probar la clave 'licenses_db' en 'app_config'
+        if cfg_rows:
+            for r in cfg_rows:
+                if isinstance(r, dict) and r.get("key") == "licenses_db" and r.get("value"):
+                    return r["value"] if isinstance(r["value"], dict) else json.loads(r["value"])
+
+    except Exception as exc:
+        print(f"Advertencia cargando desde Supabase: {exc}")
+
+    return None
+
+
+def save_device_supabase(dev: dict):
+    if not SUPABASE_URL or not SUPABASE_KEY or not isinstance(dev, dict):
+        return
+    try:
+        supabase_request("devices", method="POST", payload=dev, prefer="resolution=merge-duplicates")
+    except Exception as exc:
+        print(f"Error guardando dispositivo en Supabase: {exc}")
+
+
+def delete_device_supabase(hw_id: str):
+    if not SUPABASE_URL or not SUPABASE_KEY or not hw_id:
+        return
+    try:
+        supabase_request(f"devices?hw_id=eq.{urllib.parse.quote(hw_id)}", method="DELETE")
+    except Exception as exc:
+        print(f"Error eliminando dispositivo en Supabase: {exc}")
+
+
+def save_ticket_supabase(ticket: dict):
+    if not SUPABASE_URL or not SUPABASE_KEY or not isinstance(ticket, dict):
+        return
+    try:
+        supabase_request("tickets", method="POST", payload=ticket, prefer="resolution=merge-duplicates")
+    except Exception as exc:
+        print(f"Error guardando ticket en Supabase: {exc}")
+
+
+def save_db_supabase(data: dict):
+    if not SUPABASE_URL or not SUPABASE_KEY or not isinstance(data, dict):
+        return
+    try:
+        # Guardar copia completa en app_config key=licenses_db
+        supabase_request("app_config", method="POST", payload={"key": "licenses_db", "value": data}, prefer="resolution=merge-duplicates")
+
+        # Guardar dispositivos individuales
+        devices = data.get("devices", {})
+        if isinstance(devices, dict):
+            for dev in devices.values():
+                if isinstance(dev, dict) and "hw_id" in dev:
+                    save_device_supabase(dev)
+
+        # Guardar tickets individuales
+        tickets = data.get("tickets", {})
+        if isinstance(tickets, dict):
+            for t in tickets.values():
+                if isinstance(t, dict) and "id" in t:
+                    save_ticket_supabase(t)
+
+        if "admin_config" in data:
+            supabase_request("app_config", method="POST", payload={"key": "admin_config", "value": data["admin_config"]}, prefer="resolution=merge-duplicates")
+        if "updates" in data:
+            supabase_request("app_config", method="POST", payload={"key": "updates", "value": data["updates"]}, prefer="resolution=merge-duplicates")
+    except Exception as exc:
+        print(f"Error en save_db_supabase: {exc}")
+
 
 def load_db() -> dict:
+    sb_data = load_db_supabase()
+    if sb_data is not None:
+        return sb_data
+
     if os.path.exists(DATA_FILE):
         try:
             with open(DATA_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 data.setdefault("devices", {})
+                data.setdefault("tickets", {})
                 return data
         except Exception:
             pass
+
     initial = {
         "admin_config": {
-            "user": "laconcha",
-            "pass": "quelapario"
+            "user": os.environ.get("ADMIN_USER", "laconcha"),
+            "pass": os.environ.get("ADMIN_PASS", "quelapario")
         },
-        # Cada equipo se registra solo (por su ID de hardware, no por una clave que se
-        # pueda copiar/compartir) la primera vez que abre la app, siempre como plan FREE
-        # (prueba de 30 días). Un admin lo pasa a plan PAID desde /admin tras validar el pago.
         "devices": {},
+        "tickets": {},
         "updates": {
             "latest_version": "1.0.0",
             "download_url": "https://github.com/pedroagv/API_Traductor/releases/latest/download/SubVozPro_Portable.zip",
@@ -39,51 +176,13 @@ def load_db() -> dict:
     return initial
 
 
-def evaluate_device(dev: dict) -> dict:
-    """Determina si un dispositivo puede ejecutar la app en este momento, según su plan."""
-    now = datetime.datetime.now()
-    plan = dev.get("plan", "FREE")
-
-    if plan == "PAID":
-        expires_at_str = dev.get("expires_at")
-        if expires_at_str:
-            exp_dt = datetime.datetime.fromisoformat(expires_at_str)
-            if now > exp_dt:
-                return {
-                    "can_run": False, "status": "expired",
-                    "message": f"Tu licencia venció el {exp_dt.strftime('%d/%m/%Y')}. Contacta a ventas para renovarla.",
-                    "days_remaining": 0,
-                }
-            return {
-                "can_run": True, "status": "active",
-                "message": f"Licencia activa hasta el {exp_dt.strftime('%d/%m/%Y')}.",
-                "days_remaining": (exp_dt - now).days,
-            }
-        return {"can_run": True, "status": "active", "message": "Licencia activa (vitalicia).", "days_remaining": 999999}
-
-    # plan FREE: prueba de 30 días contada desde el primer registro en el servidor.
-    first_seen_str = dev.get("first_seen") or now.isoformat()
-    first_seen = datetime.datetime.fromisoformat(first_seen_str)
-    elapsed = (now - first_seen).days
-    remaining = max(0, TRIAL_DAYS - elapsed)
-
-    if remaining > 0:
-        return {
-            "can_run": True, "status": "trial",
-            "message": f"Prueba gratuita: {remaining} día(s) restantes.",
-            "days_remaining": remaining,
-        }
-
-    return {
-        "can_run": False, "status": "expired_trial",
-        "message": "Tu período de prueba de 30 días terminó. Contacta a ventas para activar tu licencia.",
-        "days_remaining": 0,
-    }
-
-
 def save_db(data: dict):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+    try:
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+    except Exception:
+        pass
+    save_db_supabase(data)
 
 
 def get_admin_credentials() -> tuple[str, str]:
