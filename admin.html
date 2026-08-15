@@ -102,6 +102,20 @@
             background: rgba(96, 165, 250, 0.12); border: 1px solid rgba(96, 165, 250, 0.25);
         }
 
+        .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+        .tab-btn {
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--muted);
+            padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 8px; transition: all 0.15s ease;
+        }
+        .tab-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #3B82F6 0%, #6D5CE9 100%); color: #fff; border-color: transparent;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+        }
+        .page { display: none; }
+        .page.active { display: block; }
+
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px; }
         .form-group { display: flex; flex-direction: column; gap: 6px; }
         label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
@@ -184,6 +198,13 @@
             </div>
         </header>
 
+        <nav class="tabs">
+            <button class="tab-btn active" data-page="page-license" onclick="showPage('page-license')">🔑 Activar Licencia</button>
+            <button class="tab-btn" data-page="page-disk" onclick="showPage('page-disk')">💾 Disco Persistente</button>
+            <button class="tab-btn" data-page="page-devices" onclick="showPage('page-devices')">📋 Dispositivos</button>
+            <button class="tab-btn" data-page="page-support" onclick="showPage('page-support')">🎟️ Soporte y Tickets</button>
+        </nav>
+
         <!-- Modal Cambiar Credenciales -->
         <div id="creds-box" class="card" style="display: none; border-color: var(--purple); background: rgba(139, 92, 246, 0.08);">
             <h2><span class="icon-badge">⚙️</span> Cambiar Usuario y Contraseña de Administrador</h2>
@@ -204,6 +225,7 @@
         </div>
 
         <!-- Sección Activar Dispositivo por ID -->
+        <div class="page active" id="page-license">
         <div class="card">
             <h2><span class="icon-badge">🔑</span> Activar Licencia por ID de Equipo</h2>
             <p style="color: var(--muted); font-size: 13px; margin-top: -10px; margin-bottom: 16px;">
@@ -242,8 +264,10 @@
                 </div>
             </div>
         </div>
+        </div>
 
         <!-- Sección Disco Persistente de Almacenamiento -->
+        <div class="page" id="page-disk">
         <div class="card">
             <h2><span class="icon-badge">💾</span> Disco Persistente de Almacenamiento (5 GB en Render)</h2>
             <p style="color: var(--muted); font-size: 13px; margin-top: -10px; margin-bottom: 16px;">
@@ -286,8 +310,10 @@
                 </div>
             </div>
         </div>
+        </div>
 
         <!-- Lista de Dispositivos Registrados -->
+        <div class="page" id="page-devices">
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <h2 style="margin-bottom: 0;"><span class="icon-badge">📋</span> Dispositivos Registrados en el Sistema</h2>
@@ -311,8 +337,10 @@
                 </table>
             </div>
         </div>
+        </div>
 
         <!-- Centro de Soporte y Tickets -->
+        <div class="page" id="page-support">
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <h2 style="margin-bottom: 0;"><span class="icon-badge">🎟️</span> Centro de Soporte, Tickets y Solicitudes de Reunión</h2>
@@ -337,10 +365,18 @@
                 </table>
             </div>
         </div>
+        </div>
     </div>
 
     <script>
         var currentToken = localStorage.getItem("admin_token") || "";
+
+        function showPage(pageId) {
+            document.querySelectorAll(".page").forEach(function(p) { p.classList.remove("active"); });
+            document.querySelectorAll(".tab-btn").forEach(function(b) { b.classList.remove("active"); });
+            document.getElementById(pageId).classList.add("active");
+            document.querySelector('.tab-btn[data-page="' + pageId + '"]').classList.add("active");
+        }
 
         async function doLogin() {
             var user = document.getElementById("admin-user").value.trim();
