@@ -718,6 +718,23 @@ def app(environ, start_response):
 
             return response(200, {"success": True, "completed": False, "chunk_index": chunk_idx})
 
+        elif path in ("/admin/api/delete-file", "/admin/api/delete-disk-file"):
+            token = get_param("token")
+            if not check_auth_token(token):
+                return response(401, {"success": False, "message": "No autorizado"})
+
+            filename = get_param("filename", "SubVozPro_Internal.zip")
+            dest_path = os.path.join(DOWNLOADS_DIR, filename)
+
+            if os.path.exists(dest_path):
+                try:
+                    os.remove(dest_path)
+                    return response(200, {"success": True, "message": f"Archivo '{filename}' borrado exitosamente del disco persistente de Render."})
+                except Exception as exc:
+                    return response(500, {"success": False, "message": f"Error al borrar archivo: {exc}"})
+            else:
+                return response(404, {"success": False, "message": f"Archivo '{filename}' no existe en el disco."})
+
         else:
             return response(404, {"error": "Endpoint no encontrado"})
 
@@ -783,6 +800,23 @@ def app(environ, start_response):
                             "url": f"/downloads/{fn}"
                         })
             return response(200, {"success": True, "disk_dir": DOWNLOADS_DIR, "files": files_list})
+
+        elif path in ("/admin/api/delete-file", "/admin/api/delete-disk-file"):
+            token = get_param("token")
+            if not check_auth_token(token):
+                return response(401, {"success": False, "message": "No autorizado"})
+
+            filename = get_param("filename", "SubVozPro_Internal.zip")
+            dest_path = os.path.join(DOWNLOADS_DIR, filename)
+
+            if os.path.exists(dest_path):
+                try:
+                    os.remove(dest_path)
+                    return response(200, {"success": True, "message": f"Archivo '{filename}' borrado exitosamente del disco persistente de Render."})
+                except Exception as exc:
+                    return response(500, {"success": False, "message": f"Error al borrar archivo: {exc}"})
+            else:
+                return response(404, {"success": False, "message": f"Archivo '{filename}' no existe en el disco."})
 
         elif path in ("/admin", "/admin/"):
             admin_path = os.path.join(os.path.dirname(__file__), "admin.html")
