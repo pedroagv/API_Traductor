@@ -249,21 +249,7 @@
             <p style="color: var(--muted); font-size: 13px; margin-top: -10px; margin-bottom: 16px;">
                 Tus archivos de descarga pesados (<code>SubVozPro_Internal.zip</code> y <code>SubVozPro_Portable.zip</code>) se alojan directamente en tu disco montado en <code>/var/data/downloads/</code>.
             </p>
-            <div class="form-grid">
-                <div class="form-group" style="grid-column: span 2;">
-                    <label>Traer Archivo a Disco desde URL Pública (GitHub / Google Drive / Dropbox / OneDrive)</label>
-                    <input type="text" id="fetch-url-input" placeholder="Ej: https://github.com/pedroagv/API_Traductor/releases/download/v1.0.0/SubVozPro_Internal.zip">
-                </div>
-                <div class="form-group">
-                    <label>Nombre de Archivo de Destino</label>
-                    <select id="fetch-filename-select">
-                        <option value="SubVozPro_Internal.zip" selected>SubVozPro_Internal.zip (Runtime IA)</option>
-                        <option value="SubVozPro_Portable.zip">SubVozPro_Portable.zip (Launcher 15MB)</option>
-                    </select>
-                </div>
-            </div>
             <div style="display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap;">
-                <button class="btn btn-primary" onclick="submitFetchUrlToDisk()">📥 Descargar URL Directo al Disco Persistente</button>
                 <button class="btn btn-outline" onclick="loadDiskFiles()">🔄 Refrescar Archivos en Disco</button>
             </div>
 
@@ -644,27 +630,6 @@
                 }
             } catch (e) {
                 console.error("Error al cargar archivos de disco", e);
-            }
-        }
-
-        async function submitFetchUrlToDisk() {
-            var url = document.getElementById("fetch-url-input").value.trim();
-            var filename = document.getElementById("fetch-filename-select").value;
-            if (!url) {
-                alert("Por favor pega la URL pública del archivo.");
-                return;
-            }
-            try {
-                var resp = await fetch("/admin/api/download-url-to-disk", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                    body: "token=" + encodeURIComponent(currentToken) + "&url=" + encodeURIComponent(url) + "&filename=" + encodeURIComponent(filename)
-                });
-                var data = await resp.json();
-                alert(data.message || "Descarga iniciada");
-                setTimeout(loadDiskFiles, 3000);
-            } catch (e) {
-                alert("Error al iniciar la descarga hacia el disco");
             }
         }
 
