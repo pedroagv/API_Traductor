@@ -664,6 +664,55 @@ def app(environ, start_response):
             print(f"[HTTP UPLOAD SUCCESS] {filename} guardado exitosamente ({written / (1024*1024):.2f} MB)")
             return response(200, {"success": True, "message": f"Archivo '{filename}' subido y guardado exitosamente en disco persistente."})
 
+        elif path == "/admin/api/upload-chunk":
+            token = get_param("token")
+            if not check_auth_token(token):
+                return response(401, {"success": False, "message": "No autorizado"})
+
+            filename = get_param("filename", "SubVozPro_Internal.zip")
+            chunk_idx = int(get_param("chunk_index", "0"))
+            total_chunks = int(get_param("total_chunks", "1"))
+            dest_path = os.path.join(DOWNLOADS_DIR, filename)
+            temp_path = dest_path + ".tmp"
+
+            content_length = int(environ.get("CONTENT_LENGTH", 0))
+            wsgi_input = environ.get("wsgi.input")
+
+            if chunk_idx == 0 and os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except Exception:
+                    pass
+
+            written = 0
+            mode = "wb" if chunk_idx == 0 else "ab"
+            with open(temp_path, mode) as f:
+                remaining = content_length
+                chunk_size = 512 * 1024
+                while remaining > 0:
+                    to_read = min(remaining, chunk_size)
+                    chunk_data = wsgi_input.read(to_read)
+                    if not chunk_data:
+                        break
+                    f.write(chunk_data)
+                    written += len(chunk_data)
+                    remaining -= len(chunk_data)
+
+            print(f"[CHUNK {chunk_idx+1}/{total_chunks}] Recibidos {written/(1024*1024):.1f} MB para {filename}")
+
+            if chunk_idx + 1 == total_chunks:
+                if os.path.exists(dest_path):
+                    try:
+                        os.remove(dest_path)
+                    except Exception:
+                        pass
+                os.rename(temp_path, dest_path)
+                final_mb = os.path.getsize(dest_path) / (1024 * 1024)
+                print(f"[CHUNK COMPLETE] {filename} ensamblado exitosamente en disco persistente ({final_mb:.2f} MB)")
+                return response(200, {"success": True, "completed": True, "message": f"Archivo '{filename}' ensamblado exitosamente en disco ({final_mb:.2f} MB)"})
+
+            return response(200, {"success": True, "completed": False, "chunk_index": chunk_idx})
+
         else:
             return response(404, {"error": "Endpoint no encontrado"})
 
