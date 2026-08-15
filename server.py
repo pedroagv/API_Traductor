@@ -731,20 +731,22 @@ def app(environ, start_response):
             fname = "SubVozPro_Portable.zip"
             if path.startswith("/downloads/"):
                 fname = os.path.basename(path)
-            local_file = os.path.join(DOWNLOADS_DIR, fname)
-            if os.path.exists(local_file):
-                print(f"[DISK SERVE] Sirviendo {fname} desde disco persistente ({os.path.getsize(local_file)/(1024*1024):.1f} MB)")
-                return stream_file_response(start_response, local_file, fname)
 
-            db = load_db()
-            updates = db.get("updates", {})
-            download_url = updates.get("download_url", "").strip()
+            repo_file = os.path.join(os.path.dirname(__file__), "downloads", fname)
+            disk_file = os.path.join(DOWNLOADS_DIR, fname)
 
-            if download_url and download_url != "/download" and "pedro/reunion" not in download_url:
-                target_url = download_url
-            else:
-                target_url = "https://github.com/pedroagv/API_Traductor/releases/latest/download/SubVozPro_Portable.zip"
+            target_file = None
+            if os.path.exists(repo_file):
+                target_file = repo_file
+            elif os.path.exists(disk_file):
+                target_file = disk_file
 
+            if target_file:
+                sz_mb = os.path.getsize(target_file) / (1024 * 1024)
+                print(f"[SERVE FLACO] Sirviendo {fname} ({sz_mb:.2f} MB) directamente desde {target_file}")
+                return stream_file_response(start_response, target_file, fname)
+
+            target_url = "https://raw.githubusercontent.com/pedroagv/API_Traductor/main/downloads/SubVozPro_Portable.zip"
             return response(302, b"", "text/html", [("Location", target_url)])
 
         elif path in ("/download-internal", "/download-internal/", "/SubVozPro_Internal.zip"):
