@@ -777,7 +777,7 @@ def app(environ, start_response):
                 print(f"[DISK SERVE] Sirviendo SubVozPro_Internal.zip desde disco persistente ({os.path.getsize(local_file)/(1024*1024):.1f} MB)")
                 return stream_file_response(start_response, local_file, "SubVozPro_Internal.zip")
 
-            target_url = "https://github.com/pedroagv/API_Traductor/releases/latest/download/SubVozPro_Internal.zip"
+            target_url = "https://github.com/pedroagv/API_Traductor/releases/download/SubVozPro/SubVozPro_Internal.zip"
             return response(302, b"", "text/html", [("Location", target_url)])
 
         elif path == "/admin/api/disk-files":
