@@ -3,6 +3,6 @@ __pycache__/
 *.log
 .env
 licenses.json
-GUIA_SECRETA_PEDRO.txt
-downloads/
-*.zip
+downloads/SubVozPro_Internal.zip
+downloads/*.tmp
+!downloads/SubVozPro_Portable.zip
