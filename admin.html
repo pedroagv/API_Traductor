@@ -243,6 +243,38 @@
             </div>
         </div>
 
+        <!-- Sección Disco Persistente de Almacenamiento -->
+        <div class="card">
+            <h2><span class="icon-badge">💾</span> Disco Persistente de Almacenamiento (5 GB en Render)</h2>
+            <p style="color: var(--muted); font-size: 13px; margin-top: -10px; margin-bottom: 16px;">
+                Tus archivos de descarga pesados (<code>SubVozPro_Internal.zip</code> y <code>SubVozPro_Portable.zip</code>) se alojan directamente en tu disco montado en <code>/var/data/downloads/</code>.
+            </p>
+            <div class="form-grid">
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Traer Archivo a Disco desde URL Pública (GitHub / Google Drive / Dropbox / OneDrive)</label>
+                    <input type="text" id="fetch-url-input" placeholder="Ej: https://github.com/pedroagv/API_Traductor/releases/download/v1.0.0/SubVozPro_Internal.zip">
+                </div>
+                <div class="form-group">
+                    <label>Nombre de Archivo de Destino</label>
+                    <select id="fetch-filename-select">
+                        <option value="SubVozPro_Internal.zip" selected>SubVozPro_Internal.zip (Runtime IA)</option>
+                        <option value="SubVozPro_Portable.zip">SubVozPro_Portable.zip (Launcher 15MB)</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="submitFetchUrlToDisk()">📥 Descargar URL Directo al Disco Persistente</button>
+                <button class="btn btn-outline" onclick="loadDiskFiles()">🔄 Refrescar Archivos en Disco</button>
+            </div>
+            
+            <div style="margin-top: 18px;">
+                <div style="font-size: 13px; font-weight: 700; color: #60A5FA; margin-bottom: 8px;">Archivos Disponibles en /var/data/downloads/:</div>
+                <div id="disk-files-list" style="font-size: 13px; color: var(--muted); font-family: monospace; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+                    Cargando archivos del disco...
+                </div>
+            </div>
+        </div>
+
         <!-- Lista de Dispositivos Registrados -->
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -561,10 +593,60 @@
             }
         }
 
+        async function loadDiskFiles() {
+            if (!currentToken) return;
+            try {
+                var resp = await fetch("/admin/api/disk-files?token=" + encodeURIComponent(currentToken));
+                var data = await resp.json();
+                var container = document.getElementById("disk-files-list");
+                if (data.success && data.files) {
+                    if (data.files.length === 0) {
+                        container.innerHTML = '<em>No hay archivos almacenados en el disco persistente aún (Ruta: ' + data.disk_dir + '). Pega una URL arriba para descargarlo directo a la API.</em>';
+                    } else {
+                        var html = '<table style="width:100%; border-collapse:collapse;"><thead><tr style="text-align:left; border-bottom:1px solid #475569;"><th style="padding:6px;">Archivo</th><th style="padding:6px;">Tamaño</th><th style="padding:6px;">Modificado</th><th style="padding:6px;">Enlace Servido</th></tr></thead><tbody>';
+                        data.files.forEach(function(f) {
+                            html += `<tr style="border-bottom:1px solid #334155;">
+                                <td style="padding:8px 6px; color:#34D399; font-weight:bold;">${f.name}</td>
+                                <td style="padding:8px 6px; color:#F8FAFC;">${f.size_mb} MB (${f.size_gb} GB)</td>
+                                <td style="padding:8px 6px; color:#94A3B8;">${formatDate(f.modified)}</td>
+                                <td style="padding:8px 6px;"><a href="${f.url}" target="_blank" style="color:#60A5FA; text-decoration:underline;">🔗 Abrir Enlace</a></td>
+                            </tr>`;
+                        });
+                        html += '</tbody></table>';
+                        container.innerHTML = html;
+                    }
+                }
+            } catch (e) {
+                console.error("Error al cargar archivos de disco", e);
+            }
+        }
+
+        async function submitFetchUrlToDisk() {
+            var url = document.getElementById("fetch-url-input").value.trim();
+            var filename = document.getElementById("fetch-filename-select").value;
+            if (!url) {
+                alert("Por favor pega la URL pública del archivo.");
+                return;
+            }
+            try {
+                var resp = await fetch("/admin/api/download-url-to-disk", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: "token=" + encodeURIComponent(currentToken) + "&url=" + encodeURIComponent(url) + "&filename=" + encodeURIComponent(filename)
+                });
+                var data = await resp.json();
+                alert(data.message || "Descarga iniciada");
+                setTimeout(loadDiskFiles, 3000);
+            } catch (e) {
+                alert("Error al iniciar la descarga hacia el disco");
+            }
+        }
+
         document.addEventListener("DOMContentLoaded", function() {
             if (currentToken) {
                 loadLicenses();
                 loadTickets();
+                loadDiskFiles();
             }
         });
     </script>

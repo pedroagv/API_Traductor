@@ -12,8 +12,35 @@ PORT = int(os.environ.get("PORT", 8000))
 DATA_FILE = os.path.join(os.path.dirname(__file__), "licenses.json")
 TRIAL_DAYS = 30
 
+DISK_DATA_DIR = "/var/data" if os.path.exists("/var/data") else os.path.dirname(__file__)
+DOWNLOADS_DIR = os.path.join(DISK_DATA_DIR, "downloads")
+os.makedirs(DOWNLOADS_DIR, exist_ok=True)
+
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://ilzwqheusmcqjppjuxac.supabase.co").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "sb_publishable_N8cqypOpe_lTtjBI4UrPnA_IVz8Xyzy")
+
+
+def stream_file_response(start_response, file_path: str, filename: str):
+    file_size = os.path.getsize(file_path)
+    status_line = "200 OK"
+    headers = [
+        ("Content-Type", "application/zip"),
+        ("Content-Disposition", f'attachment; filename="{filename}"'),
+        ("Content-Length", str(file_size)),
+        ("Access-Control-Allow-Origin", "*"),
+        ("Accept-Ranges", "bytes"),
+    ]
+    start_response(status_line, headers)
+
+    def file_iterator():
+        with open(file_path, "rb") as f:
+            while True:
+                chunk = f.read(512 * 1024)
+                if not chunk:
+                    break
+                yield chunk
+
+    return file_iterator()
 
 
 def supabase_request(endpoint: str, method: str = "GET", payload: dict | list = None, prefer: str = None) -> list | dict | None:
@@ -566,6 +593,40 @@ def app(environ, start_response):
             else:
                 return response(404, {"success": False, "message": "Ticket no encontrado"})
 
+        elif path == "/admin/api/download-url-to-disk":
+            token = get_param("token")
+            file_url = get_param("url")
+            filename = get_param("filename", "SubVozPro_Internal.zip")
+
+            if not check_auth_token(token):
+                return response(401, {"success": False, "message": "No autorizado"})
+
+            if not file_url:
+                return response(400, {"success": False, "message": "Falta la URL del archivo"})
+
+            dest_path = os.path.join(DOWNLOADS_DIR, filename)
+
+            def _bg_download():
+                try:
+                    print(f"[DISK FETCH] Descargando {filename} desde {file_url} hacia {dest_path}...")
+                    req = urllib.request.Request(file_url, headers={"User-Agent": "Mozilla/5.0"})
+                    with urllib.request.urlopen(req) as resp, open(dest_path + ".tmp", "wb") as f:
+                        while True:
+                            chunk = resp.read(512 * 1024)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                    if os.path.exists(dest_path):
+                        os.remove(dest_path)
+                    os.rename(dest_path + ".tmp", dest_path)
+                    print(f"[DISK FETCH SUCCESS] Archivo '{filename}' guardado exitosamente en {dest_path}")
+                except Exception as exc:
+                    print(f"[DISK FETCH ERROR] {exc}")
+
+            import threading
+            threading.Thread(target=_bg_download, daemon=True).start()
+            return response(200, {"success": True, "message": f"Descarga iniciada para '{filename}'. Estará disponible en minutos en el disco."})
+
         else:
             return response(404, {"error": "Endpoint no encontrado"})
 
@@ -581,6 +642,14 @@ def app(environ, start_response):
             })
 
         elif path in ("/download", "/download/", "/ReunionPro_Portable.zip", "/SubVozPro_Portable.zip") or path.startswith("/downloads/"):
+            fname = "SubVozPro_Portable.zip"
+            if path.startswith("/downloads/"):
+                fname = os.path.basename(path)
+            local_file = os.path.join(DOWNLOADS_DIR, fname)
+            if os.path.exists(local_file):
+                print(f"[DISK SERVE] Sirviendo {fname} desde disco persistente ({os.path.getsize(local_file)/(1024*1024):.1f} MB)")
+                return stream_file_response(start_response, local_file, fname)
+
             db = load_db()
             updates = db.get("updates", {})
             download_url = updates.get("download_url", "").strip()
@@ -593,8 +662,34 @@ def app(environ, start_response):
             return response(302, b"", "text/html", [("Location", target_url)])
 
         elif path in ("/download-internal", "/download-internal/", "/SubVozPro_Internal.zip"):
+            local_file = os.path.join(DOWNLOADS_DIR, "SubVozPro_Internal.zip")
+            if os.path.exists(local_file):
+                print(f"[DISK SERVE] Sirviendo SubVozPro_Internal.zip desde disco persistente ({os.path.getsize(local_file)/(1024*1024):.1f} MB)")
+                return stream_file_response(start_response, local_file, "SubVozPro_Internal.zip")
+
             target_url = "https://github.com/pedroagv/API_Traductor/releases/latest/download/SubVozPro_Internal.zip"
             return response(302, b"", "text/html", [("Location", target_url)])
+
+        elif path == "/admin/api/disk-files":
+            token = get_param("token")
+            if not check_auth_token(token):
+                return response(401, {"success": False, "message": "No autorizado"})
+
+            files_list = []
+            if os.path.exists(DOWNLOADS_DIR):
+                for fn in os.listdir(DOWNLOADS_DIR):
+                    fp = os.path.join(DOWNLOADS_DIR, fn)
+                    if os.path.isfile(fp):
+                        sz_mb = os.path.getsize(fp) / (1024 * 1024)
+                        mtime = datetime.datetime.fromtimestamp(os.path.getmtime(fp)).isoformat()
+                        files_list.append({
+                            "name": fn,
+                            "size_mb": round(sz_mb, 2),
+                            "size_gb": round(sz_mb / 1024, 2),
+                            "modified": mtime,
+                            "url": f"/downloads/{fn}"
+                        })
+            return response(200, {"success": True, "disk_dir": DOWNLOADS_DIR, "files": files_list})
 
         elif path in ("/admin", "/admin/"):
             admin_path = os.path.join(os.path.dirname(__file__), "admin.html")

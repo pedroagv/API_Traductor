@@ -4,6 +4,10 @@ services:
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn server:app
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 5
     envVars:
       - key: PORT
         value: 10000
