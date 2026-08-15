@@ -359,9 +359,14 @@ def app(environ, start_response):
     if method == "OPTIONS":
         return response(200, b"", "text/plain")
 
+    # Endpoints binarios: leen el cuerpo (ZIP) directamente de wsgi.input, no deben
+    # pasar por el parseo genérico de abajo, que decodifica todo como texto UTF-8
+    # y dejaría el stream ya consumido (y los bytes corruptos) para su propio manejo.
+    BINARY_UPLOAD_PATHS = ("/admin/api/upload-file", "/admin/api/upload-chunk")
+
     # Read body for POST requests
     post_params = {}
-    if method == "POST":
+    if method == "POST" and path not in BINARY_UPLOAD_PATHS:
         content_len = int(environ.get("CONTENT_LENGTH", 0) or 0)
         if content_len > 0 and "wsgi.input" in environ:
             raw_body = environ["wsgi.input"].read(content_len).decode("utf-8", errors="replace")

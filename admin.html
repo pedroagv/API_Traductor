@@ -266,7 +266,33 @@
                 <button class="btn btn-primary" onclick="submitFetchUrlToDisk()">📥 Descargar URL Directo al Disco Persistente</button>
                 <button class="btn btn-outline" onclick="loadDiskFiles()">🔄 Refrescar Archivos en Disco</button>
             </div>
-            
+
+            <div style="margin-top: 22px; padding-top: 18px; border-top: 1px dashed var(--border);">
+                <div style="font-size: 13px; font-weight: 700; color: #60A5FA; margin-bottom: 10px;">📤 Subir ZIP desde tu Computador (reemplaza el archivo existente)</div>
+                <div class="form-grid">
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>Elegir Archivo ZIP</label>
+                        <input type="file" id="upload-file-input" accept=".zip">
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre de Archivo de Destino</label>
+                        <select id="upload-filename-select">
+                            <option value="SubVozPro_Internal.zip" selected>SubVozPro_Internal.zip (Runtime IA)</option>
+                            <option value="SubVozPro_Portable.zip">SubVozPro_Portable.zip (Launcher 15MB)</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; align-items: center;">
+                    <button class="btn btn-green" id="upload-file-btn" onclick="submitUploadFile()">⬆️ Subir y Reemplazar en el Disco</button>
+                    <div id="upload-progress-wrap" style="display:none; flex: 1; min-width: 220px;">
+                        <div style="background: rgba(255,255,255,0.06); border-radius: 8px; overflow: hidden; height: 10px;">
+                            <div id="upload-progress-bar" style="background: linear-gradient(135deg, #3B82F6, #60A5FA); height: 100%; width: 0%; transition: width 0.15s ease;"></div>
+                        </div>
+                        <div id="upload-progress-text" style="font-size: 12px; color: var(--muted); margin-top: 4px;">0%</div>
+                    </div>
+                </div>
+            </div>
+
             <div style="margin-top: 18px;">
                 <div style="font-size: 13px; font-weight: 700; color: #60A5FA; margin-bottom: 8px;">Archivos Disponibles en /var/data/downloads/:</div>
                 <div id="disk-files-list" style="font-size: 13px; color: var(--muted); font-family: monospace; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
@@ -639,6 +665,71 @@
                 setTimeout(loadDiskFiles, 3000);
             } catch (e) {
                 alert("Error al iniciar la descarga hacia el disco");
+            }
+        }
+
+        async function submitUploadFile() {
+            var fileInput = document.getElementById("upload-file-input");
+            var filename = document.getElementById("upload-filename-select").value;
+            var file = fileInput.files[0];
+            if (!file) {
+                alert("Por favor elige un archivo ZIP para subir.");
+                return;
+            }
+
+            var btn = document.getElementById("upload-file-btn");
+            var wrap = document.getElementById("upload-progress-wrap");
+            var bar = document.getElementById("upload-progress-bar");
+            var text = document.getElementById("upload-progress-text");
+
+            var CHUNK_SIZE = 8 * 1024 * 1024; // 8 MB por fragmento
+            var totalChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
+
+            btn.disabled = true;
+            btn.textContent = "⏳ Subiendo...";
+            wrap.style.display = "block";
+            bar.style.width = "0%";
+            text.textContent = `0% (0 / ${totalChunks} fragmentos)`;
+
+            try {
+                for (var i = 0; i < totalChunks; i++) {
+                    var start = i * CHUNK_SIZE;
+                    var end = Math.min(start + CHUNK_SIZE, file.size);
+                    var chunk = file.slice(start, end);
+
+                    var qs = "token=" + encodeURIComponent(currentToken)
+                        + "&filename=" + encodeURIComponent(filename)
+                        + "&chunk_index=" + i
+                        + "&total_chunks=" + totalChunks;
+
+                    var resp = await fetch("/admin/api/upload-chunk?" + qs, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/octet-stream" },
+                        body: chunk
+                    });
+                    var data = await resp.json();
+                    if (!data.success) {
+                        throw new Error(data.message || "Fragmento rechazado por el servidor");
+                    }
+
+                    var pct = Math.round(((i + 1) / totalChunks) * 100);
+                    bar.style.width = pct + "%";
+                    text.textContent = `${pct}% (${i + 1} / ${totalChunks} fragmentos)`;
+
+                    if (data.completed) {
+                        text.textContent = data.message || "Subida completa";
+                    }
+                }
+
+                alert(`✅ Archivo '${filename}' subido y reemplazado con éxito en el disco persistente.`);
+                fileInput.value = "";
+                loadDiskFiles();
+            } catch (e) {
+                alert("❌ Error subiendo el archivo: " + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "⬆️ Subir y Reemplazar en el Disco";
+                wrap.style.display = "none";
             }
         }
 
