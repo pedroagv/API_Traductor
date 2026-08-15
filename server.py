@@ -592,6 +592,10 @@ def app(environ, start_response):
 
             return response(302, b"", "text/html", [("Location", target_url)])
 
+        elif path in ("/download-internal", "/download-internal/", "/SubVozPro_Internal.zip"):
+            target_url = "https://github.com/pedroagv/API_Traductor/releases/latest/download/SubVozPro_Internal.zip"
+            return response(302, b"", "text/html", [("Location", target_url)])
+
         elif path in ("/admin", "/admin/"):
             admin_path = os.path.join(os.path.dirname(__file__), "admin.html")
             if os.path.exists(admin_path):
