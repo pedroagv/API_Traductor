@@ -370,6 +370,7 @@ def app(environ, start_response):
             dev = devices.get(hw_id)
             if dev is None:
                 dev = {
+                    "hw_id": hw_id,
                     "plan": "FREE",
                     "hostname": hostname,
                     "note": "",
@@ -381,6 +382,7 @@ def app(environ, start_response):
                 }
                 devices[hw_id] = dev
             else:
+                dev["hw_id"] = hw_id
                 dev["last_seen"] = now_iso
                 if hostname:
                     dev["hostname"] = hostname
@@ -414,11 +416,14 @@ def app(environ, start_response):
             dev = devices.get(hw_id)
             if dev is None:
                 dev = {
+                    "hw_id": hw_id,
                     "plan": "FREE", "hostname": "", "note": "",
                     "first_seen": now.isoformat(), "last_seen": now.isoformat(),
                     "activated_at": None, "duration_months": 0, "expires_at": None,
                 }
                 devices[hw_id] = dev
+
+            dev["hw_id"] = hw_id
 
             dev["plan"] = "PAID"
             dev["activated_at"] = now.isoformat()
