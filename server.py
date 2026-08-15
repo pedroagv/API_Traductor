@@ -627,6 +627,43 @@ def app(environ, start_response):
             threading.Thread(target=_bg_download, daemon=True).start()
             return response(200, {"success": True, "message": f"Descarga iniciada para '{filename}'. Estará disponible en minutos en el disco."})
 
+        elif path == "/admin/api/upload-file":
+            token = get_param("token")
+            if not check_auth_token(token):
+                return response(401, {"success": False, "message": "No autorizado"})
+
+            filename = get_param("filename", "SubVozPro_Internal.zip")
+            dest_path = os.path.join(DOWNLOADS_DIR, filename)
+
+            content_length = int(environ.get("CONTENT_LENGTH", 0))
+            wsgi_input = environ.get("wsgi.input")
+
+            print(f"[HTTP UPLOAD] Recibiendo {filename} ({content_length / (1024*1024):.2f} MB) via HTTP stream...")
+
+            temp_path = dest_path + ".tmp"
+            written = 0
+            with open(temp_path, "wb") as f:
+                remaining = content_length
+                chunk_size = 512 * 1024
+                while remaining > 0:
+                    to_read = min(remaining, chunk_size)
+                    chunk = wsgi_input.read(to_read)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    written += len(chunk)
+                    remaining -= len(chunk)
+
+            if os.path.exists(dest_path):
+                try:
+                    os.remove(dest_path)
+                except Exception:
+                    pass
+            os.rename(temp_path, dest_path)
+
+            print(f"[HTTP UPLOAD SUCCESS] {filename} guardado exitosamente ({written / (1024*1024):.2f} MB)")
+            return response(200, {"success": True, "message": f"Archivo '{filename}' subido y guardado exitosamente en disco persistente."})
+
         else:
             return response(404, {"error": "Endpoint no encontrado"})
 
