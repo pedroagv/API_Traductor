@@ -309,6 +309,30 @@
                     Cargando archivos del disco...
                 </div>
             </div>
+
+            <div style="margin-top: 22px; padding-top: 18px; border-top: 1px dashed var(--border);">
+                <div style="font-size: 13px; font-weight: 700; color: #60A5FA; margin-bottom: 6px;">📢 Publicar Nueva Versión (Aviso de Actualización)</div>
+                <p style="color: var(--muted); font-size: 13px; margin-bottom: 14px;">
+                    Sube el ZIP arriba primero. Después pon aquí el número de versión de esa build: a partir de
+                    ese momento, todos los que ya tienen la app instalada y la abran verán el aviso de
+                    actualización (ellos deciden si la descargan o no). Ese número debe coincidir con
+                    <code>CURRENT_VERSION</code> que se sube en <code>Traductor/updater.py</code> antes de compilar esa versión.
+                </p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Número de Versión a Publicar (ej. 1.1.0)</label>
+                        <input type="text" id="update-version-input" placeholder="1.1.0">
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>Novedades (se muestran en el aviso al usuario)</label>
+                        <input type="text" id="update-notes-input" placeholder="Ej: Corrige el tema oscuro de la ventana principal">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 4px; flex-wrap: wrap; align-items: center;">
+                    <button class="btn btn-green" id="publish-version-btn" onclick="submitUpdateVersion()">📢 Publicar Versión</button>
+                    <div id="current-version-label" style="font-size: 13px; color: var(--muted);">Cargando versión publicada actual...</div>
+                </div>
+            </div>
         </div>
         </div>
 
@@ -396,6 +420,9 @@
                     localStorage.setItem("admin_token", currentToken);
                     document.getElementById("login-overlay").style.display = "none";
                     loadDevices();
+                    loadTickets();
+                    loadDiskFiles();
+                    loadUpdateInfo();
                 } else {
                     err.innerText = data.message || "Usuario o contraseña incorrectos";
                     err.style.display = "block";
@@ -734,11 +761,66 @@
             }
         }
 
+        async function loadUpdateInfo() {
+            if (!currentToken) return;
+            try {
+                var resp = await fetch("/admin/api/update-info?token=" + encodeURIComponent(currentToken));
+                var data = await resp.json();
+                var label = document.getElementById("current-version-label");
+                if (data.success) {
+                    label.textContent = "Versión publicada actualmente: v" + data.latest_version
+                        + (data.release_notes ? " — " + data.release_notes : "");
+                    document.getElementById("update-version-input").placeholder = data.latest_version;
+                    document.getElementById("update-notes-input").placeholder = data.release_notes || "Ej: Corrige el tema oscuro de la ventana principal";
+                }
+            } catch (e) {
+                console.error("Error al cargar info de actualización", e);
+            }
+        }
+
+        async function submitUpdateVersion() {
+            var version = document.getElementById("update-version-input").value.trim();
+            var notes = document.getElementById("update-notes-input").value.trim();
+            if (!version) {
+                alert("Por favor escribe el número de versión (ej. 1.1.0).");
+                return;
+            }
+
+            var btn = document.getElementById("publish-version-btn");
+            btn.disabled = true;
+            btn.textContent = "⏳ Publicando...";
+
+            try {
+                var resp = await fetch("/admin/api/set-update-version", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: "token=" + encodeURIComponent(currentToken)
+                        + "&version=" + encodeURIComponent(version)
+                        + "&notes=" + encodeURIComponent(notes)
+                });
+                var data = await resp.json();
+                if (data.success) {
+                    alert("✅ " + data.message);
+                    document.getElementById("update-version-input").value = "";
+                    document.getElementById("update-notes-input").value = "";
+                    loadUpdateInfo();
+                } else {
+                    alert("❌ " + (data.message || "No se pudo publicar la versión"));
+                }
+            } catch (e) {
+                alert("Error de conexión: " + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "📢 Publicar Versión";
+            }
+        }
+
         document.addEventListener("DOMContentLoaded", function() {
             if (currentToken) {
                 loadDevices();
                 loadTickets();
                 loadDiskFiles();
+                loadUpdateInfo();
             }
         });
     </script>

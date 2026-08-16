@@ -12,6 +12,10 @@ PORT = int(os.environ.get("PORT", 8000))
 DATA_FILE = os.path.join(os.path.dirname(__file__), "licenses.json")
 TRIAL_DAYS = 30
 
+# URL pública de esta misma API, para armar enlaces absolutos (ej. el botón "Descargar
+# actualización" del cliente) -- Render expone la URL real del servicio en esta variable.
+PUBLIC_BASE_URL = os.environ.get("RENDER_EXTERNAL_URL", "https://api-traductor-tq44.onrender.com").rstrip("/")
+
 DISK_DATA_DIR = "/var/data" if os.path.exists("/var/data") else os.path.dirname(__file__)
 DOWNLOADS_DIR = os.path.join(DISK_DATA_DIR, "downloads")
 os.makedirs(DOWNLOADS_DIR, exist_ok=True)
@@ -735,6 +739,29 @@ def app(environ, start_response):
             else:
                 return response(404, {"success": False, "message": f"Archivo '{filename}' no existe en el disco."})
 
+        elif path == "/admin/api/set-update-version":
+            token = get_param("token")
+            if not check_auth_token(token):
+                return response(401, {"success": False, "message": "No autorizado"})
+
+            version = get_param("version")
+            notes = get_param("notes", "")
+
+            if not version:
+                return response(400, {"success": False, "message": "Falta el número de versión (ej. 1.1.0)"})
+
+            db = load_db()
+            updates = db.setdefault("updates", {})
+            updates["latest_version"] = version
+            updates["release_notes"] = notes
+            updates["download_url"] = f"{PUBLIC_BASE_URL}/download"
+            save_db(db)
+
+            return response(200, {
+                "success": True,
+                "message": f"Versión publicada: v{version}. Los clientes que abran la app verán el aviso de actualización.",
+            })
+
         else:
             return response(404, {"error": "Endpoint no encontrado"})
 
@@ -745,7 +772,10 @@ def app(environ, start_response):
             updates = db.get("updates", {})
             return response(200, {
                 "tag_name": updates.get("latest_version", "1.0.0"),
-                "html_url": "/download",
+                # Debe ser absoluta: el cliente la abre directo con el navegador del sistema
+                # (QDesktopServices / webbrowser), y una ruta relativa como "/download" ahí
+                # no resuelve a nada -- intenta abrirla como archivo local y falla en silencio.
+                "html_url": updates.get("download_url") or f"{PUBLIC_BASE_URL}/download",
                 "notes": updates.get("release_notes", ""),
             })
 
@@ -779,6 +809,19 @@ def app(environ, start_response):
 
             target_url = "https://github.com/pedroagv/API_Traductor/releases/download/SubVozPro/SubVozPro_Internal.zip"
             return response(302, b"", "text/html", [("Location", target_url)])
+
+        elif path == "/admin/api/update-info":
+            token = get_param("token")
+            if not check_auth_token(token):
+                return response(401, {"success": False, "message": "No autorizado"})
+
+            db = load_db()
+            updates = db.get("updates", {})
+            return response(200, {
+                "success": True,
+                "latest_version": updates.get("latest_version", "1.0.0"),
+                "release_notes": updates.get("release_notes", ""),
+            })
 
         elif path == "/admin/api/disk-files":
             token = get_param("token")
